@@ -1,0 +1,8 @@
+# API keys — do not commit
+models.json
+
+# Pi runtime generated files
+bin/
+session/
+sessions/
+npm/
