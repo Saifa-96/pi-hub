@@ -49,6 +49,14 @@ Open PowerShell, replace the path with your real repository absolute path, then 
 )
 ```
 
+## 4) Install packages
+
+After setting `PI_CODING_AGENT_DIR`, run the following to install all packages declared in `settings.json`:
+
+```bash
+pi update
+```
+
 ## Verify
 
 ```bash

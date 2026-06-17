@@ -2,5 +2,11 @@
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-pro",
   "lastChangelogVersion": "0.79.6",
-  "theme": "dark"
+  "theme": "dark",
+  "skills": [
+    "skills"
+  ],
+  "packages": [
+    "git:github.com/obra/superpowers"
+  ]
 }
