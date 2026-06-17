@@ -4,12 +4,12 @@ A portable Pi configuration and skills library. Keep your Pi settings, model/pro
 
 Pi reads config from the directory set by `PI_CODING_AGENT_DIR`.
 
-## 1) Install Pi
+## 1. Install Pi
 
 - Site: https://pi.dev/
 - Quickstart: https://pi.dev/docs/latest/quickstart
 
-## 2) Point Pi to this repo
+## 2. Point Pi to this repo
 
 Set `PI_CODING_AGENT_DIR` to this repository's absolute path.
 
@@ -18,7 +18,7 @@ Set `PI_CODING_AGENT_DIR` to this repository's absolute path.
 Add to `~/.zshrc`:
 
 ```bash
-export PI_CODING_AGENT_DIR="$HOME/Documents/Workspace/pi-hub"
+export PI_CODING_AGENT_DIR="$HOME/Documents/path/to/pi-hub"
 ```
 
 ### Windows (PowerShell)
@@ -39,7 +39,17 @@ Optional — verify it's set:
 echo $PI_CODING_AGENT_DIR   # PowerShell: [System.Environment]::GetEnvironmentVariable("PI_CODING_AGENT_DIR", "User")
 ```
 
-## 3) Install packages
+## 3. Configure models
+
+`models.json` holds your provider API keys and is git-ignored. Create your own by copying the example, then fill in your keys:
+
+```bash
+cp models.example.json models.json
+```
+
+Browse available models and their config at https://pi.dev/models.
+
+## 4. Install packages
 
 Install local dependencies (e.g. OpenSpec) and the packages declared in `settings.json` in one step:
 
