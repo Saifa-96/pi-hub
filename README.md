@@ -1,78 +1,48 @@
-# Pi Skills and Config Repo
+# Pi Hub
 
-This repository is a portable Pi configuration and skills library.
-
-Goal:
-- Keep your Pi settings and skills in one Git repo.
-- Clone on a new machine, install Pi, point Pi to this repo, and use the same setup.
-
-## 1) What this repository is for
-
-Use this repo as your single source of truth for:
-- Pi settings
-- Pi model/provider configuration
-- Pi skills/prompts/extensions
+A portable Pi configuration and skills library. Keep your Pi settings, model/provider config, and skills in one Git repo, then clone it on any machine to reproduce the same setup.
 
 Pi reads config from the directory set by `PI_CODING_AGENT_DIR`.
 
-## 2) Install Pi
+## 1) Install Pi
 
-Official site:
-- https://pi.dev/
+- Site: https://pi.dev/
+- Quickstart: https://pi.dev/docs/latest/quickstart
 
-Quickstart docs:
-- https://pi.dev/docs/latest/quickstart
+## 2) Point Pi to this repo
 
-## 3) Configure PI_CODING_AGENT_DIR and link to this local repo
-
-Set `PI_CODING_AGENT_DIR` to this repository path so Pi reads config from here.
+Set `PI_CODING_AGENT_DIR` to this repository's absolute path.
 
 ### macOS (zsh)
 
-Persistent: add to `~/.zshrc`
+Add to `~/.zshrc`:
 
 ```bash
-export PI_CODING_AGENT_DIR="$HOME/Documents/Workspace/agent-skills"
+export PI_CODING_AGENT_DIR="$HOME/Documents/Workspace/pi-hub"
 ```
 
-### Windows PowerShell
+### Windows (PowerShell)
 
-Persistent (user-level):
-
-Open PowerShell, replace the path with your real repository absolute path, then run the command.
+Replace the path with your real absolute path, then run:
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable(
   "PI_CODING_AGENT_DIR",
-  "C:\\path\\to\\agent-skills",
+  "C:\\path\\to\\pi-hub",
   "User"
 )
 ```
 
-## 4) Install packages
-
-After cloning this repository, install local dependencies (OpenSpec is installed locally, not globally):
+Optional — verify it's set:
 
 ```bash
-pnpm i
+echo $PI_CODING_AGENT_DIR   # PowerShell: [System.Environment]::GetEnvironmentVariable("PI_CODING_AGENT_DIR", "User")
 ```
 
-After setting `PI_CODING_AGENT_DIR`, run the following to install all packages declared in `settings.json`:
+## 3) Install packages
+
+Install local dependencies (e.g. OpenSpec) and the packages declared in `settings.json` in one step:
 
 ```bash
-pi update
-```
-
-## Verify
-
-```bash
-echo $PI_CODING_AGENT_DIR
-pi --list-models
-```
-
-On Windows PowerShell:
-
-```powershell
-[System.Environment]::GetEnvironmentVariable("PI_CODING_AGENT_DIR", "User")
-pi --list-models
+pnpm i && pi update
 ```
