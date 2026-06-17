@@ -7,3 +7,7 @@ session/
 sessions/
 npm/
 git/
+trust.json
+
+# Local package manager artifacts
+node_modules/

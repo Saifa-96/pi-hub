@@ -3,6 +3,7 @@
   "defaultModel": "deepseek-v4-pro",
   "lastChangelogVersion": "0.79.6",
   "theme": "dark",
+  "shellCommandPrefix": "export PATH=\"$PI_CODING_AGENT_DIR/node_modules/.bin:$PATH\"",
   "skills": [
     "skills"
   ],
