@@ -16,8 +16,5 @@
       "onFail": "download"
     }
   },
-  "type": "module",
-  "devDependencies": {
-    "@fission-ai/openspec": "^1.4.1"
-  }
+  "type": "module"
 }

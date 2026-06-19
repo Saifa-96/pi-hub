@@ -47,47 +47,9 @@ Browse available models and their config at https://pi.dev/models.
 
 ## 4. Install packages
 
-Install local dependencies (e.g. OpenSpec) and the packages declared in `settings.json` in one step:
+Install local dependencies and the packages declared in `settings.json` in one step:
 
 ```bash
 pnpm i && pi update
 ```
-
-## Spec-driven workflow (`/sdd`)
-
-`pi-hub` ships a set of skills that orchestrate [OpenSpec](https://openspec.dev/)
-(the WHAT) and [Superpowers](https://github.com/obra/superpowers) (the HOW) into a
-single spec-first flow. Run `/sdd` in any project and it detects where you are and
-drives five phases: **open → design → build → verify → archive**.
-
-- `/sdd` — entry point; detects the current phase and dispatches
-- `/sdd-open` — clarify requirements, create the OpenSpec change
-  - OpenSpec: `openspec new change`, `openspec instructions`, `openspec validate`
-- `/sdd-design` — brainstorm the technical design
-  - Superpowers: `brainstorming`
-- `/sdd-build` — plan and implement
-  - Superpowers: `writing-plans`, `executing-plans`, `test-driven-development` (optional), `using-git-worktrees` (worktree isolation), `systematic-debugging` (debug gate), `requesting-code-review`
-- `/sdd-verify` — verify against the spec, review, handle the branch
-  - Superpowers: `verification-before-completion`, `requesting-code-review`, `finishing-a-development-branch`
-  - OpenSpec: `openspec validate`
-- `/sdd-archive` — merge the delta spec into main specs and archive
-  - OpenSpec: `openspec archive`
-
-### How artifacts are stored
-
-The `openspec` binary is provided globally by pi-hub (it is on PATH via
-`shellCommandPrefix`), so target projects don't install it. OpenSpec and
-Superpowers write to their native locations in the project being built:
-
-```
-your-project/
-├── src/  .git/
-├── openspec/changes/<name>/        # proposal, design, tasks, spec, state
-└── docs/superpowers/specs|plans|reports/   # design docs, plans, verification reports
-```
-
-These artifacts belong to the project. If you'd rather not track them, add them
-to the project's `.gitignore`.
-
-The first `/sdd` run initializes `openspec/` automatically.
 
