@@ -1,6 +1,6 @@
 # React Conventions
 
-React-specific details for the [coding-style](../SKILL.md) skill. The general principles (early return, named exports, avoiding side effects) live in the top-level skill; this file covers their React-specific shape plus React-only rules.
+React-specific details for the [coding-style](../SKILL.md) skill. React code is also TypeScript, so the general conventions (type safety, early return, named exports, avoiding side effects) in [typescript.md](typescript.md) apply too; this file covers their React-specific shape plus React-only rules.
 
 ## Props
 
@@ -69,7 +69,9 @@ return (
 
 - **Do not use `window` (or `document`, `localStorage`, etc.) without explicit user approval.** Reach for framework hooks and React state instead. Ask before introducing direct browser-global access.
 
-## Files & exports
+## Files & directories
 
+- Directory and file names use **kebab-case**.
+- Component files use descriptive names (not `index.tsx`); `index.ts` is for re-exports only.
 - Complex modules split into a subfolder with individual component files; `index.ts` re-exports all.
 - Named exports only, no default exports.
