@@ -1,5 +1,6 @@
 # API keys — do not commit
 models.json
+auth.json
 
 # Pi runtime generated files
 bin/
