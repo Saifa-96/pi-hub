@@ -26,11 +26,7 @@ export PI_CODING_AGENT_DIR="$HOME/Documents/path/to/pi-hub"
 Replace the path with your real absolute path, then run:
 
 ```powershell
-[System.Environment]::SetEnvironmentVariable(
-  "PI_CODING_AGENT_DIR",
-  "C:\\path\\to\\pi-hub",
-  "User"
-)
+[System.Environment]::SetEnvironmentVariable("PI_CODING_AGENT_DIR", "C:\path\to\pi-hub", "User")
 ```
 
 Optional — verify it's set:
