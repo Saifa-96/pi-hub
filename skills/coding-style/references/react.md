@@ -20,6 +20,24 @@ export function Chat({ characterId }: ChatProps) { ... }
 ## Effects
 
 - **Avoid `useEffect` unless there's no other way.** Effects can introduce unexpected behavior — re-runs, stale closures, ordering issues. Prefer event handlers or values derived during render. If you think an effect is the only option, say so explicitly and why.
+- **Never write to a ref from inside a `useEffect` just to mirror a prop or value.** The "latest value" ref pattern — an effect whose only job is `someRef.current = someValue` — is banned. It tears the ref's value one render behind during the commit, and exists only to work around an effect that shouldn't be there. Assign the ref during render instead, or remove the indirection entirely.
+
+```tsx
+// avoid — effect that mirrors a prop into a ref
+const onAudioLinkedRef = useRef(onAudioLinked);
+useEffect(() => {
+  onAudioLinkedRef.current = onAudioLinked;
+}, [onAudioLinked]);
+
+// prefer — assign during render; the ref is always current, no effect needed
+const onAudioLinkedRef = useRef(onAudioLinked);
+onAudioLinkedRef.current = onAudioLinked;
+
+// better — if you only need the value at call time, capture it without a ref at all
+// (close over the prop directly in the handler, or pass it in when you call)
+```
+
+If you reach for this pattern to satisfy a stale-closure problem (e.g. a queue pump or subscription created once needs the latest handler), the real fix is usually to assign the ref during render, or to recreate the subscription when the dependency changes — not an effect whose body is a single ref write.
 
 ## Conditional rendering
 
