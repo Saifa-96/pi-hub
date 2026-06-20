@@ -10,6 +10,25 @@ TypeScript and general coding conventions for the [coding-style](../SKILL.md) sk
 - When the real type is awkward, **model it properly** — narrow with type guards / `in` checks, use a discriminated union, introduce a generic, or validate at the boundary with a schema. Don't cast your way past it.
 - If an escape hatch is genuinely unavoidable (a third-party type is wrong, a serialization boundary), **ask first**, explain why, and isolate it to the smallest possible scope with a comment saying why it's safe.
 
+## Named types over inline object literals
+
+- **Declare a parameter's object shape as a named `interface` or `type`, not an inline object-type literal.** Inline literals on a function signature are hard to reuse, extend, search for, and read. Name the shape and reference it.
+- Naming convention: `<FunctionName>Deps` / `<FunctionName>Options` / `<ThingName>Props` — whatever reads as the shape's role.
+- Inline literals are tolerated only when refactoring third-party generated code we don't own.
+
+```ts
+// avoid — inline object-type literal on the signature
+export function createDeepSeekLlmAdapter(deps: {
+  storage: StorageAdapter;
+}) { ... }
+
+// prefer — named type, referenced from the signature
+interface DeepSeekLlmAdapterDeps {
+  storage: StorageAdapter;
+}
+export function createDeepSeekLlmAdapter(deps: DeepSeekLlmAdapterDeps) { ... }
+```
+
 ## Identifiers must be English
 
 - **Object keys and enum/union members must be English — never CJK (Chinese/Japanese/Korean) or other non-ASCII identifiers.** This covers `z.enum([...])` members, `Record<>` keys, string-literal union types, and discriminant values. They're program identifiers, compared and indexed against in code, so they must read as code.
