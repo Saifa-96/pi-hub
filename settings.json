@@ -1,7 +1,7 @@
 {
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
-  "lastChangelogVersion": "0.79.7",
+  "defaultProvider": "github-copilot",
+  "defaultModel": "gpt-5.3-codex",
+  "lastChangelogVersion": "0.80.2",
   "theme": "dark",
   "shellCommandPrefix": "export PATH=\"$PI_CODING_AGENT_DIR/node_modules/.bin:$PATH\"",
   "enableSkillCommands": true,

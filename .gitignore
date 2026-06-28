@@ -1,14 +1,13 @@
-# API keys — do not commit
-models.json
-auth.json
+# Whitelist mode: ignore everything by default.
+*
 
-# Pi runtime generated files
-bin/
-session/
-sessions/
-npm/
-git/
-trust.json
-
-# Local package manager artifacts
-node_modules/
+# Repository-managed files
+!.gitignore
+!AGENTS.md
+!README.md
+!models.example.json
+!package.json
+!pnpm-lock.yaml
+!settings.json
+!skills/
+!skills/**
