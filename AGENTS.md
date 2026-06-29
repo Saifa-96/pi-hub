@@ -1,6 +1,10 @@
-# Agent Workflow Guardrails
+# Agent Coding Defaults
 
-These guardrails are mandatory for this repository.
+These defaults are mandatory whenever writing code in this repository.
+
+## Skills-based coding rules
+
+- Before starting code changes, follow both coding standards: `code-organization` and `coding-style`.
 
 ## Configuration files
 
