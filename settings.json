@@ -17,6 +17,7 @@
     "npm:pi-ask-user",
     "npm:pi-markdown-preview",
     "npm:context-mode",
-    "npm:@ff-labs/pi-fff"
+    "npm:@ff-labs/pi-fff",
+    "git:github.com/DietrichGebert/ponytail"
   ]
 }
