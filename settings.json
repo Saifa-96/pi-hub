@@ -1,7 +1,7 @@
 {
   "defaultProvider": "github-copilot",
   "defaultModel": "gpt-5.3-codex",
-  "lastChangelogVersion": "0.80.2",
+  "lastChangelogVersion": "0.80.3",
   "theme": "dark",
   "shellCommandPrefix": "export PATH=\"$PI_CODING_AGENT_DIR/node_modules/.bin:$PATH\"",
   "enableSkillCommands": true,
@@ -18,6 +18,8 @@
     "npm:pi-markdown-preview",
     "npm:context-mode",
     "npm:@ff-labs/pi-fff",
-    "git:github.com/DietrichGebert/ponytail"
+    "git:github.com/DietrichGebert/ponytail",
+    "npm:pi-intercom",
+    "npm:pi-prompt-template-model"
   ]
 }
