@@ -14,6 +14,6 @@ An index of personal coding conventions. Read the reference file that matches wh
 ## When to read what
 
 - **TypeScript (and the general conventions)** → [references/typescript.md](references/typescript.md)
-  Type safety (no `any`/`as`/`!`/`@ts-ignore`), English-only identifiers, early return over nested conditionals, bind non-trivial iterables before looping, named exports over default exports, JSDoc comments, `@/` imports (no namespace imports).
+  Type safety (no `any`/`as`/`!`/`@ts-ignore`), English-only identifiers, early return over nested conditionals, bind non-trivial iterables before looping, named exports over default exports, JSDoc comments, imports rule: same directory tree uses `./` and `../` (e.g. inside `src/modules/engine`), crossing project-level directories uses `@/` (e.g. `components/button` -> `lib/utils`), no namespace imports.
 - **React** → [references/react.md](references/react.md)
   File/directory naming (kebab-case), named props interface, avoid `useEffect` (never mirror props into refs via an effect), early return in JSX, no direct browser globals. React code is also TypeScript, so typescript.md applies on top.

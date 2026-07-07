@@ -19,7 +19,7 @@ Order a file so a reader meets the most important facts first and drills into im
 1. **Module-level constants** — at the very top, above everything else. Constants set the "ground truth" of the file; readers should see them before any usage.
 2. **Top-level / exported definition** — the public entry point of the file (the main component, class, or function).
 3. **Internal definitions** — in the order they are composed, parents before children.
-4. **Helper functions, pure utilities, and schemas** — at the bottom. Schemas (e.g. validators) are implementation detail on par with helpers unless shared widely, in which case hoist them up with the constants.
+4. **Helper functions, pure utilities, and schemas** — at the bottom. Schemas (e.g. validators) are implementation detail on par with helpers and should stay at the end of the file.
 5. **Type/props declarations** — place each definition's type or signature declaration *directly above the thing it describes*, not batched at the top or bottom of the file.
 
 Rationale: someone opening the file should see the public contract within the first screen — constants that govern the file, then the exported definition. Helpers and schemas are implementation detail and belong at the end. Type declarations stay next to what they describe so you never have to scroll to learn the contract.

@@ -142,5 +142,8 @@ export function assembleCharacterContext(parts) {
 
 ## Imports
 
-- Always use `@/` absolute paths, never relative paths.
+- In the same directory tree, use relative imports (`./` and `../`).
+- Example: files under `src/modules/engine` can import each other with `./` or `../`.
+- Use `@/` only when crossing project-level directories in the same repo.
+- Example: from `[root]/components/button` to `[root]/lib/utils`, use `@/lib/utils`.
 - Don't use `import * as Ns from "..."` — name the symbols you actually need so reviewers can see the surface a file consumes. **Ask the user before introducing a namespace import**, even when the package's own typings push you toward one.
