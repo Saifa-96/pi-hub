@@ -11,3 +11,5 @@
 !settings.json
 !skills/
 !skills/**
+!.agents/
+!.agents/**
