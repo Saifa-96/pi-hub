@@ -23,3 +23,9 @@ These defaults are mandatory whenever writing code in this repository.
 
 - Never commit unless the user explicitly asks.
 - Never push or run remote-impacting git commands without explicit confirmation.
+
+## Problems and blockers
+
+- When you hit a problem (error, unexpected behavior, missing access, conflicting requirements), do NOT silently work around it.
+- Stop, describe the problem to the user, and present possible options with trade-offs.
+- Wait for the user's choice before proceeding. Only proceed without asking when the fix is obvious, safe, and reversible.
