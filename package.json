@@ -16,5 +16,8 @@
       "onFail": "download"
     }
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "chrome-devtools-mcp": "^1.6.0"
+  }
 }

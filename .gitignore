@@ -9,6 +9,7 @@
 !package.json
 !pnpm-lock.yaml
 !settings.json
+!mcp.json
 !skills/
 !skills/**
 !.agents/
