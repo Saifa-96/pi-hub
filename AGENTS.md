@@ -24,6 +24,12 @@ These defaults are mandatory whenever writing code in this repository.
 - Never commit unless the user explicitly asks.
 - Never push or run remote-impacting git commands without explicit confirmation.
 
+## Library APIs and versions
+
+- Before calling a library's API, check its version first.
+- If the version is newer than your training data, do NOT rely on training knowledge — check the official documentation and treat it as the source of truth.
+- If the official documentation cannot be found, tell the user; only read the library's source code after the user agrees.
+
 ## Problems and blockers
 
 - When you hit a problem (error, unexpected behavior, missing access, conflicting requirements), do NOT silently work around it.
