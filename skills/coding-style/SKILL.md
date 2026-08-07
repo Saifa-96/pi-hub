@@ -1,5 +1,6 @@
 ---
 name: coding-style
+disable-model-invocation: true
 description: MANDATORY before writing or refactoring code in ANY language. Personal coding-style conventions — type safety (no escape hatches), early returns over nested conditionals, named-bind loops, named exports, avoiding side effects, English-only identifiers, plus React specifics. This skill is an index; read the matching reference file before writing code — do not rely on memory.
 ---
 

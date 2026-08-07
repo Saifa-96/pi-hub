@@ -1,5 +1,6 @@
 ---
 name: code-organization
+disable-model-invocation: true
 description: MANDATORY before writing or editing code in ANY language. Language-agnostic rules for how big a source file should get and how to order its contents top-down. Always read this skill before creating a source file or adding to an existing one — do not rely on memory.
 ---
 

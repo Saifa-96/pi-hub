@@ -2,15 +2,10 @@
 
 These defaults are mandatory whenever writing code in this repository.
 
-## Skills-based coding rules
-
-- Before starting code changes, follow both coding standards: `code-organization` and `coding-style`.
-
 ## Assess before editing
 
 - For code-change requests, report before touching code: what to change, which files it involves, how large the difference is, and the proposed approach.
-- Wait for the user's confirmation before applying the change.
-- Skip this only for trivial, unambiguous fixes the user fully spelled out (typos, one-line changes).
+- Always ask for explicit approval before starting to write code — every time, even when the fix seems trivial. Approval is the signal to start.
 
 ## Configuration files
 
