@@ -35,12 +35,18 @@ Optional — verify it's set:
 echo $PI_CODING_AGENT_DIR   # PowerShell: [System.Environment]::GetEnvironmentVariable("PI_CODING_AGENT_DIR", "User")
 ```
 
-## 3. Configure models
+## 3. Configure models and MCP
 
 `models.json` holds your provider API keys and is git-ignored. Create your own by copying the example, then fill in your keys:
 
 ```bash
 cp models.example.json models.json
+```
+
+`mcp.json` holds MCP server config (with API keys) and is also git-ignored. Copy the example and fill in your keys:
+
+```bash
+cp mcp.example.json mcp.json
 ```
 
 Browse available models and their config at https://pi.dev/models.

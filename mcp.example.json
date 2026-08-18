@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "node",
+      "args": [
+        "node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js",
+        "--autoConnect"
+      ],
+      "cwd": "${PI_CODING_AGENT_DIR}"
+    },
+    "zread": {
+      "url": "https://open.bigmodel.cn/api/mcp/zread/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_ZREAD_API_KEY"
+      }
+    }
+  }
+}
