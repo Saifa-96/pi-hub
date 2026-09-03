@@ -23,7 +23,7 @@ export PI_CODING_AGENT_DIR="$HOME/Documents/path/to/pi-hub"
 
 ### Windows (PowerShell)
 
-Replace the path with your real absolute path, then run:
+Windows requires [Git for Windows](https://git-scm.com/download/win) — Pi runs shell commands through its Git Bash. Replace the path with your real absolute path, then run:
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable("PI_CODING_AGENT_DIR", "C:\path\to\pi-hub", "User")
@@ -51,7 +51,11 @@ cp mcp.example.json mcp.json
 
 Browse available models and their config at https://pi.dev/models.
 
-## 4. Install packages
+## 4. Configure permissions
+
+`pi-permission-system` enforces its policy from `extensions/pi-permission-system/config.json`. Currently gated behind interactive approval: `git commit` and all `gh` write operations. Edit that file to change the rules.
+
+## 5. Install packages
 
 Install local dependencies and the packages declared in `settings.json` in one step:
 
