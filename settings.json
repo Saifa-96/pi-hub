@@ -37,7 +37,9 @@
     "npm:pi-prompt-template-model",
     "npm:@dietrichgebert/ponytail",
     "npm:@gotgenes/pi-permission-system",
-    "extensions/daktilo"
+    "extensions/daktilo",
+    "npm:pi-lens",
+    "npm:@andre-barbosa/pi-commit"
   ],
   "defaultThinkingLevel": "high",
   "fullscreenScrollbar": "auto",
