@@ -1,6 +1,16 @@
 /**
  * pi-daktilo: start daktilo with the first pi session, stop it with the last.
  *
+ * KNOWN LIMIT (verified 2026-09-03, Win11 + Git Bash/Windows Terminal): closing
+ * the terminal window hard-kills pi before `session_shutdown` can run. Node only
+ * receives the close event (CTRL_CLOSE_EVENT → SIGHUP) when attached to a real
+ * console (ConPTY); under mintty it never arrives, and even under ConPTY Windows
+ * force-terminates the process ~5s later — async cleanup may be cut off. Result:
+ * daktilo is orphaned until the next `session_start` sweep (marker + adoption)
+ * or a reboot. No user-mode hook can close this gap; the kernel-level fix would
+ * be a named Job Object with KILL_ON_JOB_CLOSE held by every pi process —
+ * deliberately not adopted to avoid a native-addon dependency.
+ *
  * - Refcount via per-pi-process marker files in a tmpdir state dir; markers of
  *   dead processes are swept on every event, so a SIGKILLed pi self-heals
  *   instead of leaking the count forever.
@@ -32,7 +42,9 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCb);
 const IS_WIN = process.platform === "win32";
-const PKG_BIN = fileURLToPath(new URL(`./daktilo${IS_WIN ? ".exe" : ""}`, import.meta.url));
+const PKG_BIN = fileURLToPath(
+  new URL(`./daktilo${IS_WIN ? ".exe" : ""}`, import.meta.url),
+);
 const EXE = IS_WIN ? "daktilo.exe" : "daktilo";
 const STEAL_MS = 2000;
 
@@ -88,7 +100,9 @@ async function probeDaktilo() {
         }
       }
     } else {
-      const { stdout } = await execFile("pgrep", ["-x", "daktilo"], { timeout: 1500 });
+      const { stdout } = await execFile("pgrep", ["-x", "daktilo"], {
+        timeout: 1500,
+      });
       const pid = parseInt(stdout.trim().split("\n")[0], 10);
       if (pid) return pid;
     }
