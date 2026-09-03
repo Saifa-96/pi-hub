@@ -21,5 +21,4 @@ Work within these boundaries:
 
 ## 4. Deliver
 
-- Never commit unless the user explicitly asks.
 - Never push or run remote-impacting git commands without explicit confirmation.

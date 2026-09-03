@@ -1,7 +1,7 @@
 {
   "defaultProvider": "zai-coding-cn",
   "defaultModel": "glm-5.3",
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.84.4",
   "theme": "dark",
   "shellCommandPrefix": "export PATH=\"$PI_CODING_AGENT_DIR/node_modules/.bin:$PATH\"",
   "enableSkillCommands": true,
@@ -16,13 +16,29 @@
     "npm:pi-mcp-adapter",
     "npm:pi-ask-user",
     "npm:pi-markdown-preview",
-    "npm:context-mode",
+    {
+      "source": "npm:context-mode",
+      "extensions": [
+        "-build/adapters/pi/extension.js"
+      ],
+      "skills": [
+        "-skills/context-mode/SKILL.md",
+        "-skills/ctx-doctor/SKILL.md",
+        "-skills/ctx-index/SKILL.md",
+        "-skills/ctx-insight/SKILL.md",
+        "-skills/ctx-purge/SKILL.md",
+        "-skills/ctx-search/SKILL.md",
+        "-skills/ctx-upgrade/SKILL.md",
+        "-skills/ctx-stats/SKILL.md"
+      ]
+    },
     "npm:@ff-labs/pi-fff",
     "npm:pi-intercom",
     "npm:pi-prompt-template-model",
-    "npm:@dietrichgebert/ponytail"
+    "npm:@dietrichgebert/ponytail",
+    "npm:@gotgenes/pi-permission-system"
   ],
-  "defaultThinkingLevel": "medium",
+  "defaultThinkingLevel": "high",
   "fullscreenScrollbar": "auto",
   "tuiMode": "fullscreen",
   "compaction": {

@@ -14,3 +14,6 @@
 !skills/**
 !.agents/
 !.agents/**
+!extensions/
+!extensions/**
+extensions/*/logs/
