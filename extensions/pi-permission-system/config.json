@@ -4,7 +4,131 @@
     "*": "allow",
     "bash": {
       "*": "allow",
-      "git commit *": "ask"
+      "git commit *": "ask",
+
+      "gh issue create *": "ask",
+      "gh issue comment *": "ask",
+      "gh issue close *": "ask",
+      "gh issue delete *": "ask",
+      "gh issue develop *": "ask",
+      "gh issue edit *": "ask",
+      "gh issue lock *": "ask",
+      "gh issue unlock *": "ask",
+      "gh issue pin *": "ask",
+      "gh issue unpin *": "ask",
+      "gh issue reopen *": "ask",
+      "gh issue transfer *": "ask",
+
+      "gh pr create *": "ask",
+      "gh pr comment *": "ask",
+      "gh pr close *": "ask",
+      "gh pr edit *": "ask",
+      "gh pr lock *": "ask",
+      "gh pr unlock *": "ask",
+      "gh pr merge *": "ask",
+      "gh pr ready *": "ask",
+      "gh pr reopen *": "ask",
+      "gh pr revert *": "ask",
+      "gh pr review *": "ask",
+      "gh pr update-branch *": "ask",
+
+      "gh release create *": "ask",
+      "gh release delete *": "ask",
+      "gh release delete-asset *": "ask",
+      "gh release edit *": "ask",
+      "gh release upload *": "ask",
+
+      "gh gist create *": "ask",
+      "gh gist delete *": "ask",
+      "gh gist edit *": "ask",
+      "gh gist rename *": "ask",
+
+      "gh repo create *": "ask",
+      "gh repo delete *": "ask",
+      "gh repo edit *": "ask",
+      "gh repo archive *": "ask",
+      "gh repo unarchive *": "ask",
+      "gh repo fork *": "ask",
+      "gh repo rename *": "ask",
+      "gh repo sync *": "ask",
+      "gh repo deploy-key add *": "ask",
+      "gh repo deploy-key delete *": "ask",
+      "gh repo autolink create *": "ask",
+      "gh repo autolink delete *": "ask",
+
+      "gh discussion create *": "ask",
+      "gh discussion comment *": "ask",
+      "gh discussion edit *": "ask",
+
+      "gh project close *": "ask",
+      "gh project copy *": "ask",
+      "gh project create *": "ask",
+      "gh project delete *": "ask",
+      "gh project edit *": "ask",
+      "gh project field-create *": "ask",
+      "gh project field-delete *": "ask",
+      "gh project item-add *": "ask",
+      "gh project item-archive *": "ask",
+      "gh project item-create *": "ask",
+      "gh project item-delete *": "ask",
+      "gh project item-edit *": "ask",
+      "gh project link *": "ask",
+      "gh project unlink *": "ask",
+      "gh project mark-template *": "ask",
+
+      "gh workflow run *": "ask",
+      "gh workflow enable *": "ask",
+      "gh workflow disable *": "ask",
+
+      "gh run cancel *": "ask",
+      "gh run delete *": "ask",
+      "gh run rerun *": "ask",
+
+      "gh secret set *": "ask",
+      "gh secret delete *": "ask",
+
+      "gh variable set *": "ask",
+      "gh variable delete *": "ask",
+
+      "gh label create *": "ask",
+      "gh label delete *": "ask",
+      "gh label edit *": "ask",
+      "gh label clone *": "ask",
+
+      "gh cache delete *": "ask",
+
+      "gh ssh-key add *": "ask",
+      "gh ssh-key delete *": "ask",
+
+      "gh gpg-key add *": "ask",
+      "gh gpg-key delete *": "ask",
+
+      "gh codespace create *": "ask",
+      "gh codespace delete *": "ask",
+      "gh codespace edit *": "ask",
+      "gh codespace rebuild *": "ask",
+      "gh codespace stop *": "ask",
+      "gh codespace cp *": "ask",
+
+      "gh skill install *": "ask",
+      "gh skill publish *": "ask",
+      "gh skill update *": "ask",
+
+      "gh agent-task create *": "ask",
+
+      "gh alias set *": "ask",
+      "gh alias delete *": "ask",
+      "gh alias import *": "ask",
+
+      "gh extension install *": "ask",
+      "gh extension remove *": "ask",
+      "gh extension upgrade *": "ask",
+      "gh extension exec *": "ask",
+      "gh extension create *": "ask",
+
+      "gh auth token *": "ask",
+
+      "gh api *": "ask"
     }
   }
 }
