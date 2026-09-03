@@ -22,3 +22,12 @@ Work within these boundaries:
 ## 4. Deliver
 
 - Never push or run remote-impacting git commands without explicit confirmation.
+
+## Browser Tooling
+
+Two browser backends are available. Pick by intent, not familiarity:
+
+- **`playwright-cli`** (bash) — the default for *driving* a page: navigate, click, fill, scrape JS-rendered sites, E2E-verify a running web app, mock network requests (`route`), record user actions as code (`recording-start`), reuse login state (`state-save` / `state-load`). Cross-browser (Chromium/Firefox/WebKit), and sessions are stateful — they survive between commands. Typical loop: `playwright-cli open <url>` → `snapshot` → `find <text>` → act on the returned `ref=e…` → `close-all` when done. Light inspection also lives here: `requests`, `console`.
+- **chrome-devtools MCP** (tools) — for *debugging* a page in Chrome: performance traces with LCP/INP/CLS insights, deep network/console inspection, heap snapshots, device emulation. Chrome-only; no network mocking, not a test runner.
+
+Do not open a browser for static pages or documentation — use built-in fetch/web search first, and spin one up only when the target is JS-rendered or interactive.
