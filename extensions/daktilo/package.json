@@ -1,0 +1,9 @@
+{
+  "name": "pi-daktilo",
+  "version": "1.0.0",
+  "type": "module",
+  "keywords": ["pi-package"],
+  "pi": {
+    "extensions": ["./extension.js"]
+  }
+}

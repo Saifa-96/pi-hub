@@ -36,7 +36,8 @@
     "npm:pi-intercom",
     "npm:pi-prompt-template-model",
     "npm:@dietrichgebert/ponytail",
-    "npm:@gotgenes/pi-permission-system"
+    "npm:@gotgenes/pi-permission-system",
+    "extensions/daktilo"
   ],
   "defaultThinkingLevel": "high",
   "fullscreenScrollbar": "auto",
