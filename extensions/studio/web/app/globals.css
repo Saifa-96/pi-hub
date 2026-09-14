@@ -1,0 +1,12 @@
+@import "shadcn-ui-lib/styles/globals.css";
+@import "shadcn-ui-lib/styles/scrollbar.css";
+@source "../node_modules/shadcn-ui-lib/src";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}

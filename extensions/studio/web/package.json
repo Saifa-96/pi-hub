@@ -1,0 +1,34 @@
+{
+  "name": "pi-studio-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3777",
+    "build": "next build",
+    "start": "next build && next start -p 3777",
+    "serve": "next start -p 3777"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.1.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-form": "^1.33.5",
+    "@tanstack/react-query": "^5.102.8",
+    "@xyflow/react": "^12.11.6",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "graphology-library": "^0.8.0",
+    "lucide-react": "^1.41.0",
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "shadcn-ui-lib": "0.1.1",
+    "sonner": "^2.0.8",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "@types/react": "19.2.18",
+    "typescript": "5.8.2"
+  }
+}

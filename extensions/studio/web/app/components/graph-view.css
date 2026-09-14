@@ -1,0 +1,51 @@
+/* Canvas-level styling (Metz layout: reactflow.css equivalent), shadcn tokens */
+.react-flow {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.react-flow__handle {
+  opacity: 0;
+}
+
+.react-flow__node:focus {
+  outline: none;
+}
+
+.react-flow__edge-path {
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+  stroke-opacity: 0.35;
+}
+
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-opacity: 1;
+}
+
+.react-flow__controls button {
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.react-flow__controls button:hover {
+  background-color: var(--accent);
+}
+
+.react-flow__controls button:first-child {
+  border-radius: 5px 5px 0 0;
+}
+
+.react-flow__controls button:last-child {
+  border-bottom: 1px solid var(--border);
+  border-radius: 0 0 5px 5px;
+}
+
+.react-flow__minimap {
+  border-radius: 8px;
+  overflow: hidden;
+}

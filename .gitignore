@@ -17,5 +17,7 @@
 !extensions/
 !extensions/**
 extensions/*/logs/
+extensions/*/node_modules/
+extensions/studio/web/data/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
