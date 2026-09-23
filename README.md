@@ -37,13 +37,9 @@ echo $PI_CODING_AGENT_DIR   # PowerShell: [System.Environment]::GetEnvironmentVa
 
 ## 3. Configure models and MCP
 
-`models.json` holds your provider API keys and is git-ignored. Create your own by copying the example, then fill in your keys:
+Run `/login` in Pi to sign in to a provider (credentials are stored in `auth.json`), then pick a model with `/model`. Browse available models at https://pi.dev/models.
 
-```bash
-cp models.example.json models.json
-```
-
-`mcp.json` holds MCP server config (with API keys) and is also git-ignored. Copy the example and fill in your keys:
+`mcp.json` holds MCP server config (with API keys) and is git-ignored. Copy the example and fill in your keys:
 
 ```bash
 cp mcp.example.json mcp.json

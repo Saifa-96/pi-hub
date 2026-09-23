@@ -5,7 +5,6 @@
 !.gitignore
 !AGENTS.md
 !README.md
-!models.example.json
 !package.json
 !pnpm-lock.yaml
 !settings.json
