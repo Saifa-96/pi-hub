@@ -4,7 +4,7 @@
  * Each snippet is a markdown file with frontmatter (name, description,
  * placement, order) stored in the `snippets/` directory next to this file.
  *
- * - Press f8 or run /snippets to open the toggle menu (space: toggle,
+ * - Press ctrl+shift+e or run /snippets to open the toggle menu (space: toggle,
  *   tab: preview, enter: apply, esc: cancel). The menu is a bordered,
  *   scrollable view.
  * - Active snippets appear as a widget above the editor, with prepend and
@@ -297,10 +297,10 @@ export default function (pi: ExtensionAPI) {
 					invalidate() {},
 					handleInput(data: string) {
 						if (mode === "list") {
-							if (matchesKey(data, Key.up) || matchesKey(data, "j")) {
+							if (matchesKey(data, Key.up) || matchesKey(data, "k")) {
 								cursor = (cursor - 1 + items.length) % items.length;
 								tui.requestRender();
-							} else if (matchesKey(data, Key.down) || matchesKey(data, "k")) {
+							} else if (matchesKey(data, Key.down) || matchesKey(data, "j")) {
 								cursor = (cursor + 1) % items.length;
 								tui.requestRender();
 							} else if (matchesKey(data, Key.space)) {
@@ -317,10 +317,10 @@ export default function (pi: ExtensionAPI) {
 							} else if (matchesKey(data, Key.escape)) {
 								done(false);
 							}
-						} else if (matchesKey(data, Key.up) || matchesKey(data, "j")) {
+						} else if (matchesKey(data, Key.up) || matchesKey(data, "k")) {
 							previewScroll--;
 							tui.requestRender();
-						} else if (matchesKey(data, Key.down) || matchesKey(data, "k")) {
+						} else if (matchesKey(data, Key.down) || matchesKey(data, "j")) {
 							previewScroll++;
 							tui.requestRender();
 						} else if (matchesKey(data, Key.tab) || matchesKey(data, Key.escape)) {
@@ -367,7 +367,7 @@ export default function (pi: ExtensionAPI) {
 		};
 	});
 
-	pi.registerShortcut("f8", {
+	pi.registerShortcut("ctrl+shift+e", {
 		description: "Toggle prompt snippets",
 		handler: async (ctx) => {
 			await openMenu(ctx);
