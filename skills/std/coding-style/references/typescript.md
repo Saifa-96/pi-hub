@@ -1,6 +1,6 @@
 # TypeScript
 
-TypeScript and general coding conventions for the [coding-style](../SKILL.md) skill. These apply to all TypeScript code; React adds more on top in [react.md](react.md).
+TypeScript and general coding conventions for the [coding-style](../rules.md) rules. These apply to all TypeScript code; React adds more on top in [react.md](react.md).
 
 ## Type safety
 

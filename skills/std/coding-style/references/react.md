@@ -1,6 +1,6 @@
 # React Conventions
 
-React-specific details for the [coding-style](../SKILL.md) skill. React code is also TypeScript, so the general conventions (type safety, early return, named exports, avoiding side effects) in [typescript.md](typescript.md) apply too; this file covers their React-specific shape plus React-only rules.
+React-specific details for the [coding-style](../rules.md) rules. React code is also TypeScript, so the general conventions (type safety, early return, named exports, avoiding side effects) in [typescript.md](typescript.md) apply too; this file covers their React-specific shape plus React-only rules.
 
 ## Props
 
@@ -68,6 +68,21 @@ return (
 ## Browser globals
 
 - **Do not use `window` (or `document`, `localStorage`, etc.) without explicit user approval.** Reach for framework hooks and React state instead. Ask before introducing direct browser-global access.
+
+## Tailwind
+
+- **Combine classnames with `cn()` only — never ternaries, template strings, or `+` concatenation inside `className`.** Conditional or computed classes go through `cn(...)` (clsx/tailwind-merge helper) so variants stay declarative and merge conflicts resolve correctly.
+
+```tsx
+// avoid — ternary in className
+<button className={active ? "bg-blue-500 text-white" : "bg-gray-200"} />
+
+// avoid — template string in className
+<div className={`${base} ${active ? "font-bold" : ""} p-2`} />
+
+// prefer — cn()
+<button className={cn("rounded px-3 py-1.5", active && "bg-blue-500 text-white", !active && "bg-gray-200")} />
+```
 
 ## Files & directories
 
