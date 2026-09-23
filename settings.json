@@ -1,7 +1,7 @@
 {
   "defaultProvider": "zai-coding-cn",
   "defaultModel": "glm-5.3",
-  "lastChangelogVersion": "0.85.1",
+  "lastChangelogVersion": "0.87.1",
   "theme": "dark",
   "shellCommandPrefix": "export PATH=\"$(cygpath \"$PI_CODING_AGENT_DIR\" 2>/dev/null || echo \"$PI_CODING_AGENT_DIR\")/node_modules/.bin:$PATH\"",
   "enableSkillCommands": true,
