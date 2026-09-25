@@ -1,0 +1,46 @@
+/* 最小壳样式：整页画布 + 顶栏 */
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	height: 100%;
+	font-family: "Cascadia Code", Consolas, "Noto Sans SC", monospace;
+	color: #2a2622;
+	background: #faf7f2;
+}
+
+#topbar {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	padding: 10px 16px;
+	border-bottom: 1px solid #e8e1d5;
+}
+
+#topbar .kicker {
+	color: #b3552e;
+	font-size: 0.72rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+#page-title {
+	font-weight: 600;
+}
+
+#canvas-wrap {
+	height: calc(100% - 45px);
+}
+
+#root,
+#root > * {
+	height: 100%;
+}
+
+.react-flow__attribution {
+	display: none;
+}

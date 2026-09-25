@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="icon" href="data:," />
+	<title>Studio</title>
+	<!-- React Flow 的基础样式来自 CDN；配色与排版由 studio.css 覆盖 -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xyflow/react@12.11.6/dist/style.css" />
+	<link rel="stylesheet" href="/studio.css" />
+	<script type="importmap">
+	{
+		"imports": {
+			"react": "https://esm.sh/react@19.2.0",
+			"react-dom": "https://esm.sh/react-dom@19.2.0",
+			"react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
+			"@xyflow/react": "https://esm.sh/@xyflow/react@12.11.6?deps=react@19.2.0,react-dom@19.2.0",
+			"htm": "https://esm.sh/htm@3.1.1"
+		}
+	}
+	</script>
+</head>
+<body>
+	<header id="topbar">
+		<div class="kicker">pi studio</div>
+		<span id="page-title">工作台（xy-flow 示例 · mock 数据）</span>
+	</header>
+	<main id="canvas-wrap"><div id="root"></div></main>
+	<script type="module" src="/app.js"></script>
+</body>
+</html>

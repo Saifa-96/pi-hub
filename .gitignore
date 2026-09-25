@@ -5,9 +5,11 @@
 !.gitignore
 !AGENTS.md
 !README.md
+!STUDIO.md
 !package.json
 !pnpm-lock.yaml
 !settings.json
+!skills-lock.json
 !mcp.example.json
 !skills/
 !skills/**
@@ -16,5 +18,6 @@
 !extensions/
 !extensions/**
 extensions/*/logs/
+extensions/studio/data/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
