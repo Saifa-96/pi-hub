@@ -112,6 +112,24 @@ test("evidence 支持 :行号；边端点必须存在（含 children 里的 id�
 	}
 });
 
+test("expandable：boolean 合法 / 非 boolean 报诊断", () => {
+	const repo = makeRepo();
+	try {
+		const ok = validGraph();
+		ok.nodes[0].expandable = true;
+		ok.nodes[1].children = [{ id: "tts-engine", kind: "backend", label: "引擎", expandable: true, children: [] }];
+		assert.equal(runCli(ok, repo).status, 0, "boolean expandable（含嵌套）合法");
+
+		const bad = validGraph();
+		bad.nodes[0].expandable = "yes";
+		const result = runCli(bad, repo);
+		assert.equal(result.status, 1);
+		assert.ok(JSON.parse(result.stdout).some((item) => item.path === "$.nodes[0].expandable"));
+	} finally {
+		rmSync(repo, { recursive: true, force: true });
+	}
+});
+
 test("children 里的重复 id → 诊断；用法错误 → exit 2", () => {
 	const repo = makeRepo();
 	try {

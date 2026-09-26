@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 const KINDS = ["frontend", "backend", "database", "external"];
-const NODE_KEYS = ["id", "kind", "label", "summary", "evidence", "children"];
+const NODE_KEYS = ["id", "kind", "label", "summary", "evidence", "children", "expandable"];
 const TOP_KEYS = ["project", "generatedAt", "nodes", "edges"];
 const EDGE_KEYS = ["from", "to", "label"];
 
@@ -100,6 +100,9 @@ function validateNode(node, path) {
 				}
 			}
 		}
+	}
+	if (node.expandable !== undefined && typeof node.expandable !== "boolean") {
+		fail(`${path}.expandable`, `必须是 boolean`);
 	}
 	if (node.children !== undefined) {
 		if (!Array.isArray(node.children)) {

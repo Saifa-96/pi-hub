@@ -30,7 +30,9 @@
   "label": "语法练习",                    // 图上显示的名字（人话，短）
   "summary": "按遗忘曲线调度复习",         // 一句话说明（database 的如「使用 supabase」）
   "evidence": ["app/grammar/page.tsx"], // 仓库相对路径，可带 :行号，必须真实存在
-  "children": []                        // 任何节点都可以有——下钻就是填它
+  "children": [],                       // 任何节点都可以有——深入(deepen)就是填它
+  "expandable": true                    // 可选：内部还有未披露结构，可在 studio 页面发起「深入」；
+                                        // 有 children = 已深入过；深入后 agent 重估（更深层仍在则保留 true）
 }
 ```
 
@@ -54,8 +56,8 @@
 
 1. 只做原地小编辑，三种操作：拆分（节点→children）、填充（summary/evidence）、
    连线/改线（新增边，或把边端点改到更具体的节点——证据支持时）
-2. **下钻与 kind 无关**：任何节点被下钻就是填 children（database 也能下钻成
-   表/集合，external 也能下钻成具体 API 面）
+2. **深入与 kind 无关**：任何节点被深入就是填 children（database 也能深入成
+   表/集合，external 也能深入成具体 API 面）
 3. 禁止整图重写；未被要求深入的节点保持原样（含它的错别字）
 4. evidence 只写真实读过的文件路径，禁止发明
 5. 每次改完必须跑校验；连续两轮错误数不降就停，如实报告
