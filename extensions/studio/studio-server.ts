@@ -14,6 +14,8 @@ export interface StudioServerDeps {
 	webDir: string;
 	dataDir: string;
 	projectRoot: string;
+	/** 页面发起「深入」分析时回调（节点 id）。不传则 POST /api/deepen 返回 501。 */
+	onDeepen?: (nodeId: string) => void;
 }
 
 export interface StudioServerHandle {
@@ -59,9 +61,34 @@ function tokenMatches(provided: string | null, expected: string): boolean {
 /**
  * Start the studio server on a random free localhost port.
  */
+function readJsonBody(req: IncomingMessage): Promise<unknown> {
+	return new Promise((resolve, reject) => {
+		let size = 0;
+		const chunks: Buffer[] = [];
+		req.on("data", (chunk: Buffer) => {
+			size += chunk.length;
+			if (size > 65536) {
+				reject(new Error("body too large"));
+				req.destroy();
+				return;
+			}
+			chunks.push(chunk);
+		});
+		req.on("end", () => {
+			try {
+				resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+			} catch (error) {
+				reject(error);
+			}
+		});
+		req.on("error", reject);
+	});
+}
+
 export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerHandle> {
 	const token = randomBytes(16).toString("hex");
-	const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+	let lastDeepenAt = 0;
+	const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
 		const url = new URL(req.url ?? "/", "http://127.0.0.1");
 		const route = STATIC_ROUTES[url.pathname];
 
@@ -88,6 +115,34 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 			} catch {
 				sendJson(res, 200, { graph: null });
 			}
+			return;
+		}
+
+		if (url.pathname === "/api/deepen" && req.method === "POST") {
+			if (typeof deps.onDeepen !== "function") {
+				sendJson(res, 501, { error: "deepen unavailable" });
+				return;
+			}
+			// ponytail: 3s 冷却防双击；要更细的并发控制再做任务队列
+			if (Date.now() - lastDeepenAt < 3000) {
+				sendJson(res, 429, { error: "cooldown" });
+				return;
+			}
+			let body: unknown;
+			try {
+				body = await readJsonBody(req);
+			} catch {
+				sendJson(res, 400, { error: "bad body" });
+				return;
+			}
+			const nodeId = (body as { nodeId?: unknown } | null)?.nodeId;
+			if (typeof nodeId !== "string" || nodeId === "") {
+				sendJson(res, 400, { error: "nodeId required" });
+				return;
+			}
+			lastDeepenAt = Date.now();
+			deps.onDeepen(nodeId);
+			sendJson(res, 200, { ok: true });
 			return;
 		}
 
