@@ -44,3 +44,80 @@ body {
 .react-flow__attribution {
 	display: none;
 }
+
+/* graph 卡片与列头 */
+.graph-card {
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
+	padding: 8px 12px;
+	border: 1px solid #e8e1d5;
+	border-left: 3px solid var(--kind, #b3552e);
+	border-radius: 8px;
+	background: #fffdf9;
+}
+
+.graph-card-label {
+	font-weight: 600;
+	font-size: 0.9rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.graph-card-summary {
+	margin-top: 2px;
+	font-size: 0.72rem;
+	color: #7a6f63;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.graph-card.kind-frontend { --kind: #3f7f5f; }
+.graph-card.kind-backend { --kind: #3a6ea5; }
+.graph-card.kind-database { --kind: #a5762d; }
+.graph-card.kind-external { --kind: #8a5f9e; }
+
+.graph-group {
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	border: 1.5px dashed var(--kind, #b3552e);
+	border-radius: 12px;
+	background: rgba(243, 227, 216, 0.3);
+	padding: 0;
+}
+
+.graph-group.kind-frontend { --kind: #3f7f5f; }
+.graph-group.kind-backend { --kind: #3a6ea5; }
+.graph-group.kind-database { --kind: #a5762d; }
+.graph-group.kind-external { --kind: #8a5f9e; }
+
+.graph-group-title {
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--kind, #b3552e);
+	padding: 6px 12px 0;
+}
+
+.graph-column-header {
+	font-size: 0.72rem;
+	letter-spacing: 0.12em;
+	color: #b3552e;
+	text-transform: uppercase;
+	font-weight: 600;
+	padding: 4px 2px;
+	width: 240px;
+	border-bottom: 1px solid #e8d9c3;
+}
+
+.graph-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: #7a6f63;
+	font-size: 0.9rem;
+}
