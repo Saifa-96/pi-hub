@@ -11,7 +11,7 @@ import { isAbsolute, join, resolve } from "node:path";
 const KINDS = ["frontend", "backend", "database", "external"];
 const NODE_KEYS = ["id", "kind", "label", "summary", "evidence", "children", "expandable"];
 const TOP_KEYS = ["project", "generatedAt", "nodes", "edges"];
-const EDGE_KEYS = ["from", "to", "label"];
+const EDGE_KEYS = ["from", "to", "label", "bidirectional"];
 
 function usage() {
 	console.error("用法: node validate-graph.mjs <候选graph.json> [--repo-root <仓库根目录>]");
@@ -140,6 +140,9 @@ if (!isPlainObject(graph)) {
 			}
 			if (edge.label !== undefined && typeof edge.label !== "string") {
 				fail(`${path}.label`, "必须是字符串");
+			}
+			if (edge.bidirectional !== undefined && typeof edge.bidirectional !== "boolean") {
+				fail(`${path}.bidirectional`, `必须是 boolean`);
 			}
 		}
 	}
