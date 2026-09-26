@@ -1,141 +1,188 @@
-/* Studio 页面：加载 graph.json 并渲染。
- * 布局：按 kind 分列（frontend → backend → database → external），列内自上而下；
- * 有 children 的节点渲染为 group 容器（子节点纵向排布，位置相对容器）。
- * 节点不可拖动（nodesDraggable=false），坐标全部由布局函数算出。 */
+/* Studio 页面：加载 graph.json，ELK layered 布局（正交路由，节点不重叠、
+ * 边走层间通道绕开节点），xy-flow 只负责渲染。
+ * 坐标语义：ELK 子节点坐标相对父节点，xy-flow parentId 也是相对坐标——直通。
+ * 边渲染：ELK 的 ORTHOGONAL 路由给的是真实折线点，roundedPath 圆角化后
+ * 交给 BaseEdge 的 path（xyflow 文档的 Custom SVG edge paths 方式）。 */
 
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import htm from "htm";
+import ELK from "elkjs";
 import {
 	ReactFlow,
 	Background,
 	BackgroundVariant,
 	Controls,
 	Handle,
-	MarkerType,
 	Position,
+	MarkerType,
+	BaseEdge,
 } from "@xyflow/react";
 import { api } from "./api.js";
 
 const html = htm.bind(React.createElement);
 
-const KIND_ORDER = ["frontend", "backend", "database", "external"];
-const KIND_LABEL = { frontend: "前端", backend: "后端", database: "数据", external: "外部" };
-const NODE_WIDTH = 230;
-const NODE_HEIGHT = 74;
-const MEMBER_WIDTH = 200;
-const MEMBER_HEIGHT = 64;
-const COLUMN_GAP = 120;
-const ROW_GAP = 36;
-const GROUP_PADDING = 18;
-const GROUP_HEADER = 32;
-const ORIGIN = { x: 60, y: 80 };
+const elk = new ELK();
 
-/* ── 布局：纯函数，返回 { nodes, edges }（xy-flow 数据） ── */
-function layout(graph) {
-	const flowNodes = [];
-	const flowEdges = [];
-	const ids = new Set();
+const LAYOUT_OPTIONS = {
+	"elk.algorithm": "layered",
+	"elk.direction": "RIGHT",
+	"elk.edgeRouting": "ORTHOGONAL",
+	"elk.hierarchyHandling": "INCLUDE_CHILDREN",
+	"elk.spacing.nodeNode": "48",
+	"elk.layered.spacing.nodeNodeBetweenLayers": "100",
+	"elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+	"elk.padding": "[top=44,left=44,bottom=44,right=44]",
+};
 
-	/* 先量树再放：父节点必须先于子节点进入数组（React Flow 的 parentId 约束） */
-	function subtreeSize(node, isRoot) {
-		const children = Array.isArray(node.children) ? node.children : [];
-		const base = isRoot ? { width: NODE_WIDTH, height: NODE_HEIGHT } : { width: MEMBER_WIDTH, height: MEMBER_HEIGHT };
-		if (children.length === 0) return base;
-		let innerWidth = 0;
-		let innerHeight = 0;
-		for (const child of children) {
-			const size = subtreeSize(child, false);
-			innerWidth = Math.max(innerWidth, size.width);
-			innerHeight += size.height + 16;
-		}
-		return { width: innerWidth + GROUP_PADDING * 2, height: GROUP_HEADER + innerHeight - 16 + GROUP_PADDING };
-	}
-
-	function placeNode(node, x, y, parentId) {
-		ids.add(node.id);
-		const children = Array.isArray(node.children) ? node.children : [];
-		const isRoot = parentId === undefined;
-		const size = subtreeSize(node, isRoot);
-		if (children.length === 0) {
-			flowNodes.push({
-				id: node.id,
-				type: "card",
-				parentId: parentId,
-				extent: parentId === undefined ? undefined : "parent",
-				position: { x: x, y: y },
-				data: { kind: node.kind, label: node.label, summary: node.summary ?? "" },
-				style: { width: size.width, height: size.height },
-				draggable: false,
-			});
-			return size;
-		}
-		// group 容器先入数组，子节点紧随其后
-		flowNodes.push({
-			id: node.id,
-			type: "group",
-			parentId: parentId,
-			extent: parentId === undefined ? undefined : "parent",
-			position: { x: x, y: y },
-			data: { label: node.label, kind: node.kind },
-			style: { width: size.width, height: size.height },
-			draggable: false,
-		});
-		let cursor = y + GROUP_HEADER;
-		for (const child of children) {
-			// 子节点坐标必须相对父容器（React Flow parentId 语义）
-			placeNode(child, GROUP_PADDING, cursor - y, node.id);
-			cursor += subtreeSize(child, false).height + 16;
-		}
-		return size;
-	}
-
-	const columns = new Map(KIND_ORDER.map((kind) => [kind, []]));
-	for (const node of graph.nodes ?? []) {
-		(columns.get(node.kind) ?? columns.get("backend")).push(node);
-	}
-	let columnX = ORIGIN.x;
-	for (const kind of KIND_ORDER) {
-		const items = columns.get(kind);
-		if (items === undefined || items.length === 0) continue;
-		let cursorY = ORIGIN.y;
-		let columnWidth = 0;
-		for (const node of items) {
-			const size = placeNode(node, columnX, cursorY, undefined);
-			cursorY += size.height + ROW_GAP;
-			columnWidth = Math.max(columnWidth, size.width);
-		}
-		// 列头
-		flowNodes.push({
-			id: `column:${kind}`,
-			type: "columnHeader",
-			position: { x: columnX, y: ORIGIN.y - GROUP_HEADER },
-			data: { label: `${KIND_LABEL[kind]}（${items.length}）` },
-			draggable: false,
-			selectable: false,
-			connectable: false,
-		});
-		columnX += columnWidth + COLUMN_GAP;
-	}
-
-	for (const [index, edge] of (graph.edges ?? []).entries()) {
-		if (!ids.has(edge.from) || !ids.has(edge.to)) continue;
-		flowEdges.push({
-			id: `e${index}`,
-			source: edge.from,
-			target: edge.to,
-			label: edge.label,
-			type: "default",
-			markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
-		});
-	}
-	return { nodes: flowNodes, edges: flowEdges };
-}
-
-/* ── 自定义节点 ── */
 const HIDDEN_HANDLE = { opacity: 0, width: 1, height: 1, minWidth: 1, minHeight: 1, border: "none" };
 
-function Card({ data }) {
+function hasChildren(node) {
+	return Array.isArray(node.children) && node.children.length > 0;
+}
+
+/* graph.json → ELK 输入（层级结构；节点尺寸给 ELK 做布局用） */
+function toElkGraph(graph) {
+	function convert(node) {
+		const children = node.children ?? [];
+		const base = {
+			id: node.id,
+			layoutOptions: children.length > 0 ? { "elk.padding": "[top=34,left=16,bottom=16,right=16]" } : undefined,
+			width: children.length > 0 ? 240 : 230,
+			height: children.length > 0 ? 80 : 70,
+		};
+		if (children.length > 0) base.children = children.map(convert);
+		return base;
+	}
+	return {
+		id: "root",
+		layoutOptions: LAYOUT_OPTIONS,
+		children: (graph.nodes ?? []).map(convert),
+		edges: (graph.edges ?? []).map((edge, index) => ({
+			id: `e${index}`,
+			sources: [edge.from],
+			targets: [edge.to],
+			labels: edge.label ? [{ text: edge.label, width: Math.min(220, edge.label.length * 12 + 12), height: 18 }] : [],
+		})),
+	};
+}
+
+/* ELK 结果 → xy-flow 节点/边。
+ * ELK 子节点坐标相对父节点，xy-flow parentId 同为相对坐标——直通。
+ * 标签位置由 ELK 给出（带避让），透传给边。 */
+function deriveView(graph, layoutResult) {
+	const metaById = new Map((graph.nodes ?? []).map((node) => [node.id, node]));
+	const nodes = [];
+
+	// 根容器本身不渲染（只是 ELK 的坐标系）；子节点坐标已相对根原点
+	const rootOffset = { x: layoutResult.x ?? 0, y: layoutResult.y ?? 0 };
+
+	function walk(elkNode, parentId) {
+		const meta = metaById.get(elkNode.id) ?? {};
+		const isGroup = hasChildren(meta);
+		nodes.push({
+			id: elkNode.id,
+			type: isGroup ? "group" : "card",
+			parentId: parentId ?? undefined,
+			extent: parentId ? "parent" : undefined,
+			position: { x: elkNode.x ?? 0, y: elkNode.y ?? 0 },
+			data: {
+				label: meta.label ?? elkNode.id,
+				summary: meta.summary ?? "",
+				kind: meta.kind ?? "backend",
+			},
+			style: { width: elkNode.width ?? 230, height: elkNode.height ?? 70 },
+			draggable: false,
+		});
+		for (const child of elkNode.children ?? []) walk(child, elkNode.id);
+	}
+	for (const child of layoutResult.children ?? []) {
+		const shifted = { ...child, x: (child.x ?? 0) - rootOffset.x, y: (child.y ?? 0) - rootOffset.y };
+		walk(shifted, null);
+	}
+
+	const edgeById = new Map((graph.edges ?? []).map((edge, index) => [`e${index}`, edge]));
+	const edges = (layoutResult.edges ?? []).map((routed) => {
+		const original = edgeById.get(routed.id) ?? {};
+		const label = routed.labels?.[0];
+		return {
+			id: routed.id,
+			source: routed.sources?.[0],
+			target: routed.targets?.[0],
+			label: original.label,
+			type: "routed",
+			data: { points: sectionPoints(routed), labelX: label?.x, labelY: label?.y },
+			markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "#9a8f82" },
+		};
+	});
+	return { nodes: nodes, edges: edges };
+}
+
+function sectionPoints(edge) {
+	const section = edge.sections?.[0];
+	if (!section) return null;
+	return [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
+}
+
+/* ── 自定义边：ELK 折线 + 圆角 ── */
+function roundedPath(points, radius) {
+	if (!points || points.length < 2) return "M 0 0 L 0 0";
+	if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+	const commands = [`M ${points[0].x} ${points[0].y}`];
+	for (let i = 1; i < points.length - 1; i++) {
+		const prev = points[i - 1];
+		const cur = points[i];
+		const next = points[i + 1];
+		const prevLen = Math.hypot(cur.x - prev.x, cur.y - prev.y);
+		const nextLen = Math.hypot(next.x - cur.x, next.y - cur.y);
+		const r = Math.min(radius, prevLen / 2, nextLen / 2);
+		if (r < 1) {
+			commands.push(`L ${cur.x} ${cur.y}`);
+			continue;
+		}
+		commands.push(`L ${cur.x - ((cur.x - prev.x) / prevLen) * r} ${cur.y - ((cur.y - prev.y) / prevLen) * r}`);
+		commands.push(`Q ${cur.x} ${cur.y} ${cur.x + ((next.x - cur.x) / nextLen) * r} ${cur.y + ((next.y - cur.y) / nextLen) * r}`);
+	}
+	commands.push(`L ${points.at(-1).x} ${points.at(-1).y}`);
+	return commands.join(" ");
+}
+
+function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, labelBgPadding, labelBgBorderRadius, markerEnd, interactionWidth, style }) {
+	const points = data?.points;
+	const path = roundedPath(points, 10);
+	const labelPoint = data?.labelX !== undefined ? { x: data.labelX, y: data.labelY } : null;
+	return html`<${BaseEdge}
+		id=${id}
+		path=${path}
+		label=${label}
+		labelX=${labelPoint?.x ?? 0}
+		labelY=${labelPoint?.y ?? 0}
+		labelStyle=${labelStyle}
+		labelShowBg=${labelShowBg}
+		labelBgStyle=${labelBgStyle}
+		labelBgPadding=${labelBgPadding}
+		labelBgBorderRadius=${labelBgBorderRadius}
+		markerEnd=${markerEnd}
+		interactionWidth=${interactionWidth}
+		style=${style}
+	/>`;
+}
+
+const EDGE_DEFAULTS = {
+	type: "routed",
+	interactionWidth: 16,
+	style: { stroke: "#9a8f82", strokeWidth: 1.6 },
+	labelStyle: { fill: "#2a2622", fontSize: 11, fontFamily: "inherit" },
+	labelShowBg: true,
+	labelBgStyle: { fill: "#fffdf9", fillOpacity: 0.92 },
+	labelBgPadding: [5, 2],
+	labelBgBorderRadius: 4,
+};
+
+const NODE_TYPES = { card: CardNode, group: GroupNode };
+const EDGE_TYPES = { routed: RoutedEdge };
+
+function CardNode({ data }) {
 	return html`
 		<${Handle} type="target" position=${Position.Left} style=${HIDDEN_HANDLE} />
 		<div class=${"graph-card kind-" + data.kind}>
@@ -146,20 +193,21 @@ function Card({ data }) {
 	`;
 }
 
-function Group({ data }) {
-	return html`<div class=${"graph-group kind-" + data.kind}><div class="graph-group-title">${data.label}</div></div>`;
+function GroupNode({ data }) {
+	return html`
+		<${Handle} type="target" position=${Position.Left} style=${HIDDEN_HANDLE} />
+		<div class=${"graph-group kind-" + data.kind}>
+			<div class="graph-group-title">${data.label}</div>
+		</div>
+		<${Handle} type="source" position=${Position.Right} style=${HIDDEN_HANDLE} />
+	`;
 }
-
-function ColumnHeader({ data }) {
-	return html`<div class="graph-column-header">${data.label}</div>`;
-}
-
-const NODE_TYPES = { card: Card, group: Group, columnHeader: ColumnHeader };
 
 /* ── 页面 ── */
 function App() {
 	const [graph, setGraph] = useState(null);
-	const [state, setState] = useState("loading"); // loading | ready | empty | error
+	const [state, setState] = useState("loading");
+	const [layoutResult, setLayoutResult] = useState(null);
 
 	useEffect(() => {
 		api("/api/graph")
@@ -174,7 +222,15 @@ function App() {
 			.catch(() => setState("error"));
 	}, []);
 
-	const view = useMemo(() => (graph === null ? { nodes: [], edges: [] } : layout(graph)), [graph]);
+	useEffect(() => {
+		if (state !== "ready" || graph === null) return;
+		elk.layout(toElkGraph(graph)).then((result) => setLayoutResult(result));
+	}, [state, graph]);
+
+	const view = useMemo(
+		() => (layoutResult === null ? { nodes: [], edges: [] } : deriveView(graph, layoutResult)),
+		[state, graph, layoutResult],
+	);
 
 	if (state !== "ready") {
 		const hint =
@@ -191,10 +247,13 @@ function App() {
 			nodes=${view.nodes}
 			edges=${view.edges}
 			nodeTypes=${NODE_TYPES}
+			edgeTypes=${EDGE_TYPES}
+			defaultEdgeOptions=${EDGE_DEFAULTS}
 			nodesDraggable=${false}
 			nodesConnectable=${false}
 			elementsSelectable=${false}
 			fitView
+			fitViewOptions=${{ padding: 0.08, maxZoom: 1.1 }}
 			proOptions=${{ hideAttribution: true }}
 		>
 			<${Controls} showInteractive=${false} />
@@ -202,5 +261,6 @@ function App() {
 		<//>
 	`;
 }
+
 
 createRoot(document.getElementById("root")).render(html`<${App} />`);

@@ -48,7 +48,7 @@ function buildAnalyzeTask(projectRoot: string): string {
 		"2. 探测技术栈（package.json / pyproject.toml / go.mod / Cargo.toml / requirements.txt…），不要假设是前端或 TS 项目",
 		"3. 枚举入口与功能块：页面/路由/CLI/服务入口、核心模块、数据存储、外部服务（从依赖清单和 client 实例化处找证据）",
 		"4. 按 kind 归类；第一版深度 = 入口清单 + 每节点一句话 summary（database/external 给技术事实即可，如「使用 supabase」）",
-		"5. 边：从调用点 / 路由 / 依赖关系提取，label 写人话",
+		"5. 边：从调用点 / 路由 / 依赖关系提取。label 只写 2–6 字的短语，能说明这条线「传的是什么」即可（形式如动宾短语「提交答案」或名词短语「用户会话」，具体用词由项目决定）；不要完整句子、不罗列多个路径、不带 HTTP 方法等实现细节",
 		"6. evidence 必须指向你真实读过的文件，禁止发明路径",
 		"",
 		"## 产出纪律",
