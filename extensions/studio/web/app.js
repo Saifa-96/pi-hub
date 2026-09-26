@@ -156,6 +156,7 @@ function deriveView(graph, layoutResult) {
 				labelX: label === undefined ? undefined : label.x + frame.x,
 				labelY: label === undefined ? undefined : label.y + frame.y,
 			},
+			markerStart: original.bidirectional === true ? { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "#9a8f82", orient: "auto-start-reverse" } : undefined,
 			markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "#9a8f82" },
 		};
 	});
@@ -191,7 +192,7 @@ function roundedPath(points, radius) {
 	return commands.join(" ");
 }
 
-function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, labelBgPadding, labelBgBorderRadius, markerEnd, interactionWidth, style }) {
+function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, labelBgPadding, labelBgBorderRadius, markerStart, markerEnd, interactionWidth, style }) {
 	const points = data?.points;
 	const path = roundedPath(points, 10);
 	const labelPoint = data?.labelX !== undefined ? { x: data.labelX, y: data.labelY } : null;
@@ -206,6 +207,7 @@ function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, la
 		labelBgStyle=${labelBgStyle}
 		labelBgPadding=${labelBgPadding}
 		labelBgBorderRadius=${labelBgBorderRadius}
+		markerStart=${markerStart}
 		markerEnd=${markerEnd}
 		interactionWidth=${interactionWidth}
 		style=${style}
