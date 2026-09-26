@@ -28,6 +28,11 @@ const STATIC_ROUTES: Record<string, { filePath: string; contentType: string }> =
 	"/": { filePath: "index.html", contentType: "text/html; charset=utf-8" },
 	"/app.js": { filePath: "app.js", contentType: "text/javascript; charset=utf-8" },
 	"/api.js": { filePath: "api.js", contentType: "text/javascript; charset=utf-8" },
+	"/graph-view.js": { filePath: "graph-view.js", contentType: "text/javascript; charset=utf-8" },
+	"/flow-nodes.js": { filePath: "flow-nodes.js", contentType: "text/javascript; charset=utf-8" },
+	"/flow-edges.js": { filePath: "flow-edges.js", contentType: "text/javascript; charset=utf-8" },
+	"/flow-contexts.js": { filePath: "flow-contexts.js", contentType: "text/javascript; charset=utf-8" },
+	"/html.js": { filePath: "html.js", contentType: "text/javascript; charset=utf-8" },
 	"/studio.css": { filePath: "studio.css", contentType: "text/css; charset=utf-8" },
 };
 

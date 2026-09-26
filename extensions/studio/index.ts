@@ -16,7 +16,87 @@ import { openInBrowser, startStudioServer, type StudioServerHandle } from "./stu
 
 const extensionDir = dirname(fileURLToPath(import.meta.url));
 
-/** 数据目录：extensions/studio/data/<项目名>/（项目名取 package.json name，退化到目录名） */
+// pi 扩展契约要求默认导出工厂函数（框架约定，勿改为命名导出）
+export default function studioExtension(pi: ExtensionAPI) {
+	let server: StudioServerHandle | null = null;
+
+	// ExtensionAPI 没有 isIdle；用 agent_start/agent_end 跟踪忙闲，决定消息立即触发还是排队
+	let agentBusy = false;
+	pi.on("agent_start", () => {
+		agentBusy = true;
+	});
+	pi.on("agent_end", () => {
+		agentBusy = false;
+	});
+
+	function dispatchTask(task: string): void {
+		const delegation = delegationText(task);
+		if (agentBusy) pi.sendUserMessage(delegation, { deliverAs: "followUp" });
+		else pi.sendUserMessage(delegation);
+	}
+
+	pi.registerCommand("studio", {
+		description: "Start the studio page server and open it in the browser",
+		handler: async (_args, ctx) => {
+			if (server !== null) {
+				openInBrowser(server.url);
+				ctx.ui.notify(`studio already running: ${server.url}`, "info");
+				return;
+			}
+			try {
+				server = await startStudioServer({
+					webDir: join(extensionDir, "web"),
+					dataDir: projectDataDir(process.cwd()),
+					projectRoot: process.cwd(),
+					// 页面点「深入」按钮 → POST /api/deepen → 这里派前台 sub-agent
+					onDeepen: (nodeId: string) => {
+						const dataDir = projectDataDir(process.cwd());
+						if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+						dispatchTask(buildDeepenTask(process.cwd(), nodeId));
+					},
+				});
+				openInBrowser(server.url);
+				ctx.ui.notify(`studio: ${server.url}`, "info");
+			} catch (error) {
+				ctx.ui.notify(`studio failed to start: ${String(error)}`, "error");
+			}
+		},
+	});
+
+	pi.registerCommand("studio-analyze", {
+		description: "Analyze the current repo into a skeleton graph.json (delegated to a foreground sub-agent; ESC cancels)",
+		handler: async (_args, ctx) => {
+			const dataDir = projectDataDir(process.cwd());
+			if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+			dispatchTask(buildAnalyzeTask(process.cwd()));
+			ctx.ui.notify("studio analyze delegated (sub-agent, ESC 可中断)", "info");
+		},
+	});
+
+	pi.registerCommand("studio-quit", {
+		description: "Stop the studio page server",
+		handler: async (_args, ctx) => {
+			if (server === null) {
+				ctx.ui.notify("studio is not running", "info");
+				return;
+			}
+			server.close();
+			server = null;
+			ctx.ui.notify("studio stopped", "info");
+		},
+	});
+
+	pi.on("session_shutdown", () => {
+		if (server !== null) {
+			server.close();
+			server = null;
+		}
+	});
+}
+
+/**
+ * 数据目录：extensions/studio/data/<项目名>/（项目名取 package.json name，退化到目录名）。
+ */
 function projectDataDir(cwd: string): string {
 	let name = "";
 	try {
@@ -33,7 +113,22 @@ function projectDataDir(cwd: string): string {
 	return join(extensionDir, "data", slug);
 }
 
-/** 分析任务文本（传给 worker 的完整指令，路径全部绝对化） */
+/**
+ * 委托包装：把任务文本包成「派一个前台 sub-agent」的指令（ESC 可中断）。
+ */
+function delegationText(task: string): string {
+	return [
+		"用 subagent 工具派**一个前台单任务**（不要 async/--bg，保持 turn 内前台运行以便 ESC 可中断）：agent=worker，执行以下任务（原样传递）：",
+		"",
+		"---",
+		"",
+		task,
+	].join("\n");
+}
+
+/**
+ * 分析任务文本（传给 worker 的完整指令，路径全部绝对化）。
+ */
 function buildAnalyzeTask(projectRoot: string): string {
 	const schema = join(extensionDir, "SCHEMA.md");
 	const validator = join(extensionDir, "validate-graph.mjs");
@@ -61,18 +156,9 @@ function buildAnalyzeTask(projectRoot: string): string {
 	].join("\n");
 }
 
-/** 委托包装：把任务文本包成「派一个前台 sub-agent」的指令（ESC 可中断） */
-function delegationText(task: string): string {
-	return [
-		"用 subagent 工具派**一个前台单任务**（不要 async/--bg，保持 turn 内前台运行以便 ESC 可中断）：agent=worker，执行以下任务（原样传递）：",
-		"",
-		"---",
-		"",
-		task,
-	].join("\n");
-}
-
-/** 深入分析任务：只碰目标节点子树与相关边，其余逐字保留 */
+/**
+ * 深入分析任务：只碰目标节点子树与相关边，其余逐字保留。
+ */
 function buildDeepenTask(projectRoot: string, nodeId: string): string {
 	const schema = join(extensionDir, "SCHEMA.md");
 	const validator = join(extensionDir, "validate-graph.mjs");
@@ -97,82 +183,4 @@ function buildDeepenTask(projectRoot: string, nodeId: string): string {
 		"",
 		"完成后回报：children 数、改动/新增边数、校验轮次。不要改动项目代码。",
 	].join("\n");
-}
-
-export default function studioExtension(pi: ExtensionAPI) {
-	let server: StudioServerHandle | null = null;
-
-	// ExtensionAPI 没有 isIdle；用 agent_start/agent_end 跟踪忙闲，决定消息立即触发还是排队
-	let agentBusy = false;
-	pi.on("agent_start", () => {
-		agentBusy = true;
-	});
-	pi.on("agent_end", () => {
-		agentBusy = false;
-	});
-
-	function dispatchTask(task: string): void {
-		const delegation = delegationText(task);
-		if (agentBusy) pi.sendUserMessage(delegation, { deliverAs: "followUp" });
-		else pi.sendUserMessage(delegation);
-	}
-
-	pi.registerCommand("studio", {
-		description: "Start the studio page server and open it in the browser",
-		handler: async (_args, ctx) => {
-			if (server !== null) {
-				openInBrowser(server.url);
-				ctx.ui.notify(`studio already running: ${server.url}`, "info");
-				return;
-			}
-		try {
-			server = await startStudioServer({
-				webDir: join(extensionDir, "web"),
-				dataDir: projectDataDir(process.cwd()),
-				projectRoot: process.cwd(),
-				// 页面点「深入」徽标 → POST /api/deepen → 这里派前台 sub-agent
-				onDeepen: (nodeId: string) => {
-					const dataDir = projectDataDir(process.cwd());
-					if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
-					dispatchTask(buildDeepenTask(process.cwd(), nodeId));
-				},
-			});
-			openInBrowser(server.url);
-			ctx.ui.notify(`studio: ${server.url}`, "info");
-			} catch (error) {
-				ctx.ui.notify(`studio failed to start: ${String(error)}`, "error");
-			}
-		},
-	});
-
-	pi.registerCommand("studio-analyze", {
-		description: "Analyze the current repo into a skeleton graph.json (delegated to a foreground sub-agent; ESC cancels)",
-		handler: async (_args, ctx) => {
-			const dataDir = projectDataDir(process.cwd());
-			if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
-			const task = buildAnalyzeTask(process.cwd());
-			dispatchTask(task);
-			ctx.ui.notify("studio analyze delegated (sub-agent, ESC 可中断)", "info");
-		},
-	});
-
-	pi.registerCommand("studio-quit", {
-		description: "Stop the studio page server",
-		handler: async (_args, ctx) => {
-			if (server === null) {
-				ctx.ui.notify("studio is not running", "info");
-				return;
-			}
-			server.close();
-			server = null;
-			ctx.ui.notify("studio stopped", "info");
-		},
-	});
-
-	pi.on("session_shutdown", () => {
-		if (server !== null) {
-			server.close();
-			server = null;
-		}
-	});
 }
