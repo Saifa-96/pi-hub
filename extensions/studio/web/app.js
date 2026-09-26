@@ -10,6 +10,7 @@ import htm from "htm";
 import ELK from "elkjs";
 import {
 	ReactFlow,
+	useOnSelectionChange,
 	Background,
 	BackgroundVariant,
 	Controls,
@@ -196,13 +197,16 @@ function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, la
 	const points = data?.points;
 	const path = roundedPath(points, 10);
 	const labelPoint = data?.labelX !== undefined ? { x: data.labelX, y: data.labelY } : null;
+	const { dim, emphasized } = useDim(id, true);
+	const edgeStyle = Object.assign({}, style, { opacity: dim ? 0.12 : undefined, strokeWidth: emphasized ? 2.2 : undefined });
+	const dimmedLabelStyle = dim ? Object.assign({}, labelStyle, { opacity: 0.12 }) : labelStyle;
 	return html`<${BaseEdge}
 		id=${id}
 		path=${path}
 		label=${label}
 		labelX=${labelPoint?.x ?? 0}
 		labelY=${labelPoint?.y ?? 0}
-		labelStyle=${labelStyle}
+		labelStyle=${dimmedLabelStyle}
 		labelShowBg=${labelShowBg}
 		labelBgStyle=${labelBgStyle}
 		labelBgPadding=${labelBgPadding}
@@ -210,7 +214,7 @@ function RoutedEdge({ id, data, label, labelStyle, labelShowBg, labelBgStyle, la
 		markerStart=${markerStart}
 		markerEnd=${markerEnd}
 		interactionWidth=${interactionWidth}
-		style=${style}
+		style=${edgeStyle}
 	/>`;
 }
 
@@ -228,8 +232,9 @@ const EDGE_DEFAULTS = {
 const NODE_TYPES = { card: CardNode, group: GroupNode };
 const EDGE_TYPES = { routed: RoutedEdge };
 function CardNode({ data, selected }) {
+	const { dim } = useDim(data.id, false);
 	return html`
-		<div class=${"node-shell" + (selected ? " selected" : "")}>
+		<div class=${"node-shell" + (selected ? " selected" : "") + (dim ? " dimmed" : "")}>
 			${selected && data.expandable ? html`<${NodeToolbar} data=${data} />` : null}
 			<${Handle} type="target" position=${Position.Left} style=${HIDDEN_HANDLE} />
 			<div class=${"graph-card kind-" + data.kind}>
@@ -242,8 +247,9 @@ function CardNode({ data, selected }) {
 }
 
 function GroupNode({ data, selected }) {
+	const { dim } = useDim(data.id, false);
 	return html`
-		<div class=${"node-shell" + (selected ? " selected" : "")}>
+		<div class=${"node-shell" + (selected ? " selected" : "") + (dim ? " dimmed" : "")}>
 			${selected && data.expandable ? html`<${NodeToolbar} data=${data} />` : null}
 			<${Handle} type="target" position=${Position.Left} style=${HIDDEN_HANDLE} />
 			<div class=${"graph-group kind-" + data.kind}>
@@ -274,6 +280,23 @@ function NodeToolbar({ data }) {
 	</div>`;
 }
 
+/* 选中节点时突出相连节点/边、压暗其他（非受控模式下经 context 驱动） */
+const HighlightContext = createContext({ active: false, nodeIds: null, edgeIds: null });
+
+/* 监听选中变化（必须是 <ReactFlow> 子组件）；仅单选时返回焦点 id */
+function SelectionWatcher({ onSelect }) {
+	const onChange = useCallback(({ nodes }) => onSelect(nodes.length === 1 ? nodes[0].id : null), [onSelect]);
+	useOnSelectionChange({ onChange });
+	return null;
+}
+
+function useDim(id, isEdge) {
+	const hl = useContext(HighlightContext);
+	if (!hl.active) return { dim: false, emphasized: false };
+	const ids = isEdge ? hl.edgeIds : hl.nodeIds;
+	return { dim: !ids.has(id), emphasized: isEdge && ids.has(id) };
+}
+
 /* ── 页面 ── */
 function App() {
 	const [graph, setGraph] = useState(null);
@@ -281,6 +304,7 @@ function App() {
 	const [layoutResult, setLayoutResult] = useState(null);
 	const [epoch, setEpoch] = useState(0);
 	const [pendingDeepen, setPendingDeepen] = useState(() => new Set());
+	const [focusId, setFocusId] = useState(null);
 	const graphRef = React.useRef(null);
 
 	useEffect(() => {
@@ -328,8 +352,7 @@ function App() {
 		});
 	}, [state, graph]);
 
-	const requestDeepen = useCallback(async (nodeId) => {
-		setPendingDeepen((prev) => {
+	const requestDeepen = useCallback(async (nodeId) => {		setPendingDeepen((prev) => {
 			const next = new Set(prev);
 			next.add(nodeId);
 			return next;
@@ -355,6 +378,28 @@ function App() {
 		[state, graph, layoutResult],
 	);
 
+	// 单选焦点 → 连通节点/边集合（含焦点自身）；多选/无选中 = 无突出
+	const highlight = useMemo(() => {
+		if (focusId === null) return { active: false, nodeIds: null, edgeIds: null };
+		const nodeIds = new Set([focusId]);
+		const edgeIds = new Set();
+		for (const edge of view.edges) {
+			if (edge.source === focusId || edge.target === focusId) {
+				edgeIds.add(edge.id);
+				nodeIds.add(edge.source);
+				nodeIds.add(edge.target);
+			}
+		}
+		return { active: true, nodeIds, edgeIds };
+	}, [focusId, view]);
+
+	// 换图重挂载后 xyflow 内部选中清空，焦点同步复位
+	useEffect(() => {
+		setFocusId(null);
+	}, [epoch]);
+
+	const onSelect = useCallback((id) => setFocusId(id), []);
+
 	if (state !== "ready") {
 		const hint =
 			state === "empty"
@@ -366,6 +411,7 @@ function App() {
 	}
 
 	return html`
+		<${HighlightContext.Provider} value=${highlight}>
 		<${DeepenContext.Provider} value=${{ pendingDeepen, requestDeepen }}>
 		<${ReactFlow}
 			key=${"layout-" + epoch}
@@ -381,8 +427,10 @@ function App() {
 			fitViewOptions=${{ padding: 0.08, maxZoom: 1.1 }}
 			proOptions=${{ hideAttribution: true }}
 		>
+			<${SelectionWatcher} onSelect=${onSelect} />
 			<${Controls} showInteractive=${false} />
 			<${Background} variant=${BackgroundVariant.Dots} gap=${12} size=${1} />
+		<//>
 		<//>
 		<//>
 	`;
