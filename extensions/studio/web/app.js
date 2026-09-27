@@ -45,6 +45,8 @@ function App() {
 	graphRef.current = graph;
 	const hiddenRef = useRef(hiddenIds);
 	hiddenRef.current = hiddenIds;
+	const pendingRef = useRef(pendingDeepen);
+	pendingRef.current = pendingDeepen;
 
 	const persistHidden = useCallback((next) => {
 		api("/api/state", {
@@ -122,7 +124,8 @@ function App() {
 				const graphPayload = await api("/api/graph");
 				if (cancelled) return;
 				if (graphPayload.graph === null || graphPayload.graph === undefined) {
-					setState("empty");
+					// 解析失败与缺图是两回事：前者指向文件问题，别误导用户去重新分析
+					setState(graphPayload.parseError === true ? "parse-error" : "empty");
 					return;
 				}
 				graphRef.current = graphPayload.graph;
@@ -138,7 +141,7 @@ function App() {
 				}
 				setState("ready");
 			} catch (error) {
-				console.error("DBG 初始加载失败:", error && error.message);
+				console.error("初始加载失败:", error && error.message);
 				if (!cancelled) setState("error");
 			}
 		})();
@@ -158,9 +161,9 @@ function App() {
 					if (payload.graph === null) return;
 					reconcileHidden(payload.graph);
 					setGraph(payload.graph);
-					setPendingDeepen(new Set());
+					setPendingDeepen(resolvedPending(payload.graph, pendingRef.current));
 				})
-				.catch(() => {});
+				.catch((error) => console.error("更新拉取失败，保留当前图", error));
 		});
 		return () => source.close();
 	}, [state, reconcileHidden]);
@@ -168,18 +171,7 @@ function App() {
 	// 过滤隐藏节点（含其子树）及其相连边；集合变化 → 重布局 → key 重挂载
 	const filteredGraph = useMemo(() => {
 		if (graph === null || hiddenIds.size === 0) return graph;
-		const parentOf = new Map();
-		for (const top of graph.nodes ?? []) {
-			(function reg(n, p) { parentOf.set(n.id, p); for (const c of n.children ?? []) reg(c, n.id); })(top, null);
-		}
-		const isHidden = (id) => {
-			let x = id;
-			while (x) {
-				if (hiddenIds.has(x)) return true;
-				x = parentOf.get(x);
-			}
-			return false;
-		};
+		const isHidden = createHiddenPredicate(graph, hiddenIds);
 		function prune(node) {
 			const children = (node.children ?? []).filter((c) => !isHidden(c.id)).map(prune);
 			const copy = { ...node };
@@ -193,31 +185,11 @@ function App() {
 		};
 	}, [graph, hiddenIds]);
 
-	// 布局：过滤后的图变化（首次加载 / 隐藏变化 / agent 重写）时重排
-	useEffect(() => {
-		if (state !== "ready" || filteredGraph === null) return;
-		elk.layout(toElkGraph(filteredGraph)).then((result) => {
-			setLayoutResult(result);
-			setEpoch((value) => value + 1);
-		});
-	}, [state, filteredGraph]);
-
 	// 右上角计数：当前图中被隐藏的节点总数（含子树）
 	const hiddenCount = useMemo(() => {
 		if (graph === null) return 0;
+		const isHidden = createHiddenPredicate(graph, hiddenIds);
 		let total = 0;
-		const parentOf = new Map();
-		for (const top of graph.nodes ?? []) {
-			(function reg(n, p) { parentOf.set(n.id, p); for (const c of n.children ?? []) reg(c, n.id); })(top, null);
-		}
-		const isHidden = (id) => {
-			let x = id;
-			while (x) {
-				if (hiddenIds.has(x)) return true;
-				x = parentOf.get(x);
-			}
-			return false;
-		};
 		for (const top of graph.nodes ?? []) {
 			(function count(n) { if (isHidden(n.id)) total++; for (const c of n.children ?? []) count(c); })(top);
 		}
@@ -236,10 +208,12 @@ function App() {
 	// 布局：过滤后的图变化（首次加载 / 隐藏变化 / agent 重写）时重排
 	useEffect(() => {
 		if (state !== "ready" || filteredGraph === null) return;
-		elk.layout(toElkGraph(filteredGraph)).then((result) => {
-			setLayoutResult(result);
-			setEpoch((value) => value + 1);
-		});
+		elk.layout(toElkGraph(filteredGraph))
+			.then((result) => {
+				setLayoutResult(result);
+				setEpoch((value) => value + 1);
+			})
+			.catch((error) => console.error("ELK 布局失败", error));
 	}, [state, filteredGraph]);
 
 	// 单选焦点 → 连通节点/边集合（含焦点自身）；多选/无选中 = 无突出
@@ -274,9 +248,11 @@ function App() {
 		const hint =
 			state === "empty"
 				? "还没有 graph.json。在 pi 会话中运行 /studio-analyze 生成第一版设计结构图。"
-				: state === "error"
-					? "图加载失败：服务器可能已停止（/studio 重新启动）。"
-					: "加载中…";
+				: state === "parse-error"
+					? "graph.json 解析失败：文件损坏（agent 可能写坏了候选），检查 data/<项目>/graph.json。"
+					: state === "error"
+						? "图加载失败：服务器可能已停止（/studio 重新启动）。"
+						: "加载中…";
 		return html`<div class="h-full flex items-center justify-center text-sm text-zinc-500">${hint}</div>`;
 	}
 
@@ -300,9 +276,9 @@ function App() {
 			proOptions=${{ hideAttribution: true }}
 		>
 			<${SelectionWatcher} onSelect=${onSelect} />
-			${hiddenCount > 0 ? html`<${Panel} position="top-right">
-				<div class="relative border border-zinc-300 bg-white/90 text-zinc-600 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:bg-white shadow-sm" onClick=${() => setHiddenListOpen((open) => !open)}>
-					已隐藏节点（${hiddenCount}）
+			${saveFailed || hiddenCount > 0 ? html`<${Panel} position="top-right">
+				<div class=${"relative border text-[11px] px-2.5 py-1 rounded-full cursor-pointer shadow-sm " + (saveFailed ? "border-rose-500 text-rose-600 bg-white" : "border-zinc-300 bg-white/90 text-zinc-600 hover:bg-white")} title=${saveFailed ? "隐藏状态保存失败：请重启 pi 会话后重试" : undefined} onClick=${() => setHiddenListOpen((open) => !open)}>
+					已隐藏节点（${hiddenCount}）${saveFailed ? " · 未保存" : ""}
 				</div>
 				${hiddenListOpen ? html`<div class="absolute right-0 top-full mt-1.5 w-56 max-h-80 overflow-y-auto bg-white border border-zinc-200 rounded-lg shadow-lg p-1.5 z-30">
 					${hiddenEntries.map((entry) => html`<div class="flex items-center justify-between gap-2.5 px-2 py-1 rounded-md hover:bg-zinc-100" key=${entry.id}>
@@ -328,6 +304,24 @@ function App() {
 createRoot(document.getElementById("root")).render(html`<${App} />`);
 
 /**
+ * 构造「自身或任一祖先在隐藏集内」的判定函数（隐藏 group 会连带整个子树）。
+ */
+function createHiddenPredicate(graphData, hiddenIds) {
+	const parentOf = new Map();
+	for (const top of graphData.nodes ?? []) {
+		(function reg(n, p) { parentOf.set(n.id, p); for (const c of n.children ?? []) reg(c, n.id); })(top, null);
+	}
+	return (id) => {
+		let x = id;
+		while (x) {
+			if (hiddenIds.has(x)) return true;
+			x = parentOf.get(x);
+		}
+		return false;
+	};
+}
+
+/**
  * 修剪式对账：state 中已不存在于图里的 id 直接删除。无变化返回 null。
  */
 function pruneHiddenState(graphData, currentHidden) {
@@ -342,4 +336,23 @@ function pruneHiddenState(graphData, currentHidden) {
 	})(graphData.nodes);
 	const next = new Set([...currentHidden].filter((id) => graphIds.has(id)));
 	return next.size === currentHidden.size ? null : next;
+}
+
+/**
+ * 深入完成后清理 pending：已长出 children 或 io 的节点不再等待；其余保留。
+ */
+function resolvedPending(graphData, pending) {
+	if (pending.size === 0) return pending;
+	const nodeById = new Map();
+	(function reg(nodes) {
+		const list = nodes ?? [];
+		for (const node of list) {
+			nodeById.set(node.id, node);
+			reg(node.children);
+		}
+	})(graphData.nodes);
+	return new Set([...pending].filter((id) => {
+		const node = nodeById.get(id);
+		return node !== undefined && (node.children ?? []).length === 0 && node.io === undefined;
+	}));
 }

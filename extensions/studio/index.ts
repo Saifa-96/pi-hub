@@ -101,8 +101,9 @@ function projectDataDir(cwd: string): string {
 	let name = "";
 	try {
 		const parsed: unknown = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
+		// in 检查已把 parsed 收窄到含 name 的 object，无需再断言
 		if (typeof parsed === "object" && parsed !== null && "name" in parsed) {
-			const value = (parsed as { name?: unknown }).name;
+			const value = parsed.name;
 			if (typeof value === "string" && value !== "") name = value;
 		}
 	} catch {

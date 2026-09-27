@@ -2,7 +2,7 @@
  * （agent 深入时从真实代码提取）时出现；证据项点击复制路径。 */
 
 import React, { useRef, useState } from "react";
-import { html } from "./html.js";
+import { html, cn } from "./html.js";
 import { KIND_BADGE, KIND_TEXT, pickKind } from "./kind-styles.js";
 
 /**
@@ -52,7 +52,7 @@ export function InspectorPanel({ node, meta }) {
 	}
 
 	return html`<aside class="w-[300px] shrink-0 border-l border-zinc-200 bg-white p-4 overflow-y-auto">
-		<div class=${"inline-block text-[11px] tracking-wide px-2 py-0.5 border rounded-full mr-1.5 mb-2 " + pickKind(KIND_BADGE, info.kind)}>${info.kind}</div>
+		<div class=${cn("inline-block text-[11px] tracking-wide px-2 py-0.5 border rounded-full mr-1.5 mb-2", pickKind(KIND_BADGE, info.kind))}>${info.kind}</div>
 		${info.expandable ? html`<div class="inline-block text-[11px] tracking-wide px-2 py-0.5 border border-rose-500 text-rose-600 rounded-full mb-2">可深入</div>` : null}
 		<div class="font-semibold text-[15px] mb-1.5">${info.label}</div>
 		<div class="text-xs text-zinc-500 leading-relaxed">${info.summary ?? "（无说明）"}</div>
