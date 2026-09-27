@@ -107,6 +107,9 @@ export function deriveView(graph, layoutResult) {
 		const label = routed.labels?.[0];
 		const points = sectionPoints(routed);
 		const frame = lcaFrame(routed.sources?.[0], routed.targets?.[0]);
+		// ELK 的 label x/y 是标签盒左上角；xy-flow 的 labelX/Y 期望中心——补回半宽半高
+		const labelWidth = label?.width ?? Math.min(220, (original.label?.length ?? 0) * 12 + 12);
+		const labelHeight = label?.height ?? 18;
 		return {
 			id: routed.id,
 			source: routed.sources?.[0],
@@ -115,8 +118,8 @@ export function deriveView(graph, layoutResult) {
 			type: "routed",
 			data: {
 				points: points === null ? null : points.map((point) => ({ x: point.x + frame.x, y: point.y + frame.y })),
-				labelX: label === undefined ? undefined : label.x + frame.x,
-				labelY: label === undefined ? undefined : label.y + frame.y,
+				labelX: label === undefined ? undefined : label.x + frame.x + labelWidth / 2,
+				labelY: label === undefined ? undefined : label.y + frame.y + labelHeight / 2,
 			},
 			markerStart: original.bidirectional === true ? { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "#9a8f82", orient: "auto-start-reverse" } : undefined,
 			markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: "#9a8f82" },
