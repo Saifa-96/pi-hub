@@ -24,7 +24,7 @@ export function toElkGraph(graph) {
 		const children = node.children ?? [];
 		const base = {
 			id: node.id,
-			layoutOptions: children.length > 0 ? { "elk.padding": "[top=34,left=16,bottom=16,right=16]" } : undefined,
+			layoutOptions: children.length > 0 ? { "elk.padding": "[top=46,left=30,bottom=30,right=30]" } : undefined,
 			width: children.length > 0 ? 240 : 230,
 			height: children.length > 0 ? 80 : 70,
 		};
@@ -78,7 +78,7 @@ export function deriveView(graph, layoutResult) {
 		const isGroup = hasChildren(meta);
 		nodes.push({
 			id: elkNode.id,
-			type: isGroup ? "group" : "card",
+			type: isGroup ? "cluster" : "card",
 			parentId: parentId ?? undefined,
 			extent: parentId ? "parent" : undefined,
 			position: { x: elkNode.x ?? 0, y: elkNode.y ?? 0 },

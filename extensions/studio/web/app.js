@@ -21,7 +21,7 @@ import { InspectorPanel } from "./inspector.js";
 
 const elk = new ELK();
 
-const NODE_TYPES = { card: CardNode, group: GroupNode };
+const NODE_TYPES = { card: CardNode, cluster: GroupNode };
 const EDGE_TYPES = { routed: RoutedEdge };
 
 function App() {
