@@ -13,10 +13,11 @@ import {
 import ELK from "elkjs";
 import { html } from "./html.js";
 import { api } from "./api.js";
-import { deriveView, toElkGraph } from "./graph-view.js";
+import { deriveView, findNodeById, toElkGraph } from "./graph-view.js";
 import { CardNode, GroupNode } from "./flow-nodes.js";
 import { EDGE_DEFAULTS, RoutedEdge } from "./flow-edges.js";
 import { DeepenContext, HighlightContext, SelectionWatcher } from "./flow-contexts.js";
+import { InspectorPanel } from "./inspector.js";
 
 const elk = new ELK();
 
@@ -122,6 +123,11 @@ function App() {
 
 	const onSelect = useCallback((id) => setFocus({ id, epoch: epochRef.current }), []);
 
+	const focusMeta = useMemo(
+		() => (focusId === null || graph === null ? null : findNodeById(graph, focusId)),
+		[focusId, graph],
+	);
+
 	if (state !== "ready") {
 		const hint =
 			state === "empty"
@@ -132,9 +138,13 @@ function App() {
 		return html`<div class="graph-placeholder">${hint}</div>`;
 	}
 
+	const focusNode = focusId === null ? null : view.nodes.find((n) => n.id === focusId);
+
 	return html`
 		<${HighlightContext.Provider} value=${highlight}>
 		<${DeepenContext.Provider} value=${{ pendingDeepen, requestDeepen }}>
+		<div class="app-layout">
+			<div class="app-canvas">
 		<${ReactFlow}
 			key=${"layout-" + epoch}
 			defaultNodes=${view.nodes}
@@ -153,6 +163,9 @@ function App() {
 			<${Controls} showInteractive=${false} />
 			<${Background} variant=${BackgroundVariant.Dots} gap=${12} size=${1} />
 		<//>
+			</div>
+			${focusNode === null ? null : html`<${InspectorPanel} node=${focusNode} meta=${focusMeta} />`}
+		</div>
 		<//>
 		<//>
 	`;

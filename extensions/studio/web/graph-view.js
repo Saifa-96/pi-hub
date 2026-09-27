@@ -145,6 +145,22 @@ function collectRoutedEdges(elkNode, into) {
 	for (const child of elkNode.children ?? []) collectRoutedEdges(child, into);
 }
 
+/**
+ * 在图树中按 id 查找节点（含嵌套 children），找不到返回 null。
+ */
+export function findNodeById(graph, id) {
+	function search(nodes) {
+		const current = nodes ?? [];
+		for (const node of current) {
+			if (node.id === id) return node;
+			const found = search(node.children);
+			if (found) return found;
+		}
+		return null;
+	}
+	return search(graph.nodes);
+}
+
 function sectionPoints(edge) {
 	const section = edge.sections?.[0];
 	if (!section) return null;

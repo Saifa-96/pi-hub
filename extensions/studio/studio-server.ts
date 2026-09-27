@@ -33,6 +33,7 @@ const STATIC_ROUTES: Record<string, { filePath: string; contentType: string }> =
 	"/flow-edges.js": { filePath: "flow-edges.js", contentType: "text/javascript; charset=utf-8" },
 	"/flow-contexts.js": { filePath: "flow-contexts.js", contentType: "text/javascript; charset=utf-8" },
 	"/html.js": { filePath: "html.js", contentType: "text/javascript; charset=utf-8" },
+	"/inspector.js": { filePath: "inspector.js", contentType: "text/javascript; charset=utf-8" },
 	"/studio.css": { filePath: "studio.css", contentType: "text/css; charset=utf-8" },
 };
 

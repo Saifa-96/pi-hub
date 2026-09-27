@@ -41,6 +41,77 @@ body {
 	height: 100%;
 }
 
+/* 画布 + 右侧检查面板 */
+.app-layout {
+	display: flex;
+	height: 100%;
+}
+
+.app-canvas {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+}
+
+.inspector {
+	width: 300px;
+	flex-shrink: 0;
+	border-left: 1px solid #e8e1d5;
+	background: #fffdf9;
+	padding: 16px;
+	overflow-y: auto;
+}
+
+.inspector-badge {
+	display: inline-block;
+	font-size: 0.68rem;
+	letter-spacing: 0.08em;
+	padding: 2px 9px;
+	border: 1px solid var(--kind, #b3552e);
+	color: var(--kind, #b3552e);
+	border-radius: 999px;
+	margin: 0 6px 8px 0;
+}
+
+.inspector-badge.kind-frontend { --kind: #3f7f5f; }
+.inspector-badge.kind-backend { --kind: #3a6ea5; }
+.inspector-badge.kind-database { --kind: #a5762d; }
+.inspector-badge.kind-external { --kind: #8a5f9e; }
+.inspector-badge.expandable { --kind: #b3552e; }
+
+.inspector-label {
+	font-weight: 600;
+	font-size: 0.95rem;
+	margin-bottom: 6px;
+}
+
+.inspector-summary {
+	font-size: 0.78rem;
+	color: #7a6f63;
+	line-height: 1.55;
+	margin-bottom: 4px;
+}
+
+.inspector-section-title {
+	font-size: 0.68rem;
+	color: #b3552e;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	margin: 14px 0 6px;
+}
+
+.inspector-evidence {
+	font-size: 0.72rem;
+	padding: 2px 0;
+	word-break: break-all;
+}
+
+.inspector-meta-row {
+	font-size: 0.72rem;
+	color: #7a6f63;
+	padding: 2px 0;
+}
+
 /* 节点选中态与工具栏（浮动在节点上方） */
 .node-shell {
 	position: relative;
