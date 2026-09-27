@@ -147,6 +147,52 @@ test("bidirectional：boolean 合法 / 非 boolean 报诊断", () => {
 	}
 });
 
+test("io：结构化输入/输出合法，坏形态报诊断", () => {
+	const repo = makeRepo();
+	try {
+		const ok = validGraph();
+		ok.nodes[0].io = {
+			inputs: [{ name: "sessionId", description: "定位到具体对局" }],
+			outputs: [{ name: "stream", description: "SSE 逐角色流" }],
+		};
+		assert.equal(runCli(ok, repo).status, 0, "合法 io 通过");
+
+		const nameWithSpace = validGraph();
+		nameWithSpace.nodes[0].io = { inputs: [{ name: "会话 id", description: "含空白" }] };
+		const r1 = runCli(nameWithSpace, repo);
+		assert.equal(r1.status, 1);
+		assert.ok(JSON.parse(r1.stdout).some((item) => item.path === "$.nodes[0].io.inputs[0].name"));
+
+		const missingDesc = validGraph();
+		missingDesc.nodes[0].io = { outputs: [{ name: "stream" }] };
+		const r2 = runCli(missingDesc, repo);
+		assert.equal(r2.status, 1);
+		assert.ok(JSON.parse(r2.stdout).some((item) => item.path === "$.nodes[0].io.outputs[0].description"));
+
+		const emptyIo = validGraph();
+		emptyIo.nodes[0].io = {};
+		const r3 = runCli(emptyIo, repo);
+		assert.equal(r3.status, 1);
+		assert.ok(JSON.parse(r3.stdout).some((item) => item.path === "$.nodes[0].io"));
+
+		const nested = validGraph();
+		nested.nodes[0].io = {
+			inputs: [{ name: "body", description: "请求体", fields: [{ name: "sessionId", description: "定位对局" }] }]
+		};
+		assert.equal(runCli(nested, repo).status, 0, "嵌套 fields 合法");
+
+		const tooDeep = validGraph();
+		tooDeep.nodes[0].io = {
+			inputs: [{ name: "a", description: "1", fields: [{ name: "b", description: "2", fields: [{ name: "c", description: "3", fields: [{ name: "d", description: "4 层" }] }] }] }]
+		};
+		const r4 = runCli(tooDeep, repo);
+		assert.equal(r4.status, 1);
+		assert.ok(JSON.parse(r4.stdout).some((item) => item.message.includes("嵌套不能超过 3 层")));
+	} finally {
+		rmSync(repo, { recursive: true, force: true });
+	}
+});
+
 test("children 里的重复 id → 诊断；用法错误 → exit 2", () => {
 	const repo = makeRepo();
 	try {

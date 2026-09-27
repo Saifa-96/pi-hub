@@ -31,8 +31,24 @@
   "summary": "按遗忘曲线调度复习",         // 一句话说明（database 的如「使用 supabase」）
   "evidence": ["app/grammar/page.tsx"], // 仓库相对路径，可带 :行号，必须真实存在
   "children": [],                       // 任何节点都可以有——深入(deepen)就是填它
-  "expandable": true                    // 可选：内部还有未披露结构，可在 studio 页面发起「深入」；
+  "expandable": true,                   // 可选：内部还有未披露的内部结构，可在 studio 页面发起「深入」；
                                         // 有 children = 已深入过；深入后 agent 重估（更深层仍在则保留 true）
+  "io": {                                // 可选：输入/输出明细，只在深入（读过真实代码）后填写；
+                                         // 嵌套对象用 fields 递归描述（≤3 层），数组字段名加 []
+    "inputs": [
+      {
+        "name": "body",
+        "description": "创建对局的请求体",
+        "fields": [
+          { "name": "sessionId", "description": "定位对局" },
+          { "name": "utterances[]", "description": "逐角色台词", "fields": [
+            { "name": "role", "description": "发言角色" }
+          ] }
+        ]
+      }
+    ],
+    "outputs": [ { "name": "stream", "description": "SSE 事件流，data 为逐角色增量台词" } ]
+  }
 }
 ```
 

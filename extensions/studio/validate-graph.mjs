@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 const KINDS = ["frontend", "backend", "database", "external"];
-const NODE_KEYS = ["id", "kind", "label", "summary", "evidence", "children", "expandable"];
+const NODE_KEYS = ["id", "kind", "label", "summary", "evidence", "children", "expandable", "io"];
 const TOP_KEYS = ["project", "generatedAt", "nodes", "edges"];
 const EDGE_KEYS = ["from", "to", "label", "bidirectional"];
 
@@ -59,6 +59,58 @@ function stripLine(value) {
 
 const allIds = new Map(); // id -> path（重复检测 + 边端点收集）
 
+function validateIoField(item, itemPath, depth) {
+	if (!isPlainObject(item)) {
+		fail(itemPath, `必须是对象`);
+		return;
+	}
+	checkKeys(item, ["name", "description", "fields"], itemPath);
+	if (typeof item.name !== "string" || item.name === "" || /\s/.test(item.name)) {
+		fail(`${itemPath}.name`, `必须是代码中的真实标识符（非空且不含空白）`);
+	}
+	if (typeof item.description !== "string" || item.description === "") {
+		fail(`${itemPath}.description`, `必须是非空字符串（这个字段用来做什么）`);
+	}
+	if (item.fields === undefined) return;
+	if (depth >= 3) {
+		fail(`${itemPath}.fields`, `嵌套不能超过 3 层`);
+		return;
+	}
+	if (!Array.isArray(item.fields)) {
+		fail(`${itemPath}.fields`, `必须是数组`);
+		return;
+	}
+	for (const [index, child] of item.fields.entries()) {
+		validateIoField(child, `${itemPath}.fields[${index}]`, depth + 1);
+	}
+}
+
+function validateIoList(list, listPath) {
+	for (const [index, item] of list.entries()) {
+		validateIoField(item, `${listPath}[${index}]`, 1);
+	}
+}
+
+function validateIo(io, path) {
+	if (!isPlainObject(io)) {
+		fail(`${path}.io`, `必须是对象`);
+		return;
+	}
+	checkKeys(io, ["inputs", "outputs"], `${path}.io`);
+	for (const kind of ["inputs", "outputs"]) {
+		const list = io[kind];
+		if (list === undefined) continue;
+		if (!Array.isArray(list)) {
+			fail(`${path}.io.${kind}`, `必须是数组`);
+			continue;
+		}
+		validateIoList(list, `${path}.io.${kind}`);
+	}
+	if (!Array.isArray(io.inputs) && !Array.isArray(io.outputs)) {
+		fail(`${path}.io`, `inputs / outputs 至少提供一个`);
+	}
+}
+
 function validateNode(node, path) {
 	if (!isPlainObject(node)) {
 		fail(path, `必须是对象`);
@@ -103,6 +155,9 @@ function validateNode(node, path) {
 	}
 	if (node.expandable !== undefined && typeof node.expandable !== "boolean") {
 		fail(`${path}.expandable`, `必须是 boolean`);
+	}
+	if (node.io !== undefined) {
+		validateIo(node.io, path);
 	}
 	if (node.children !== undefined) {
 		if (!Array.isArray(node.children)) {

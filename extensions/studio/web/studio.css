@@ -127,6 +127,28 @@ body {
 	padding: 2px 0;
 }
 
+.inspector-io-item {
+	margin-bottom: 8px;
+}
+
+.inspector-io-name {
+	font-size: 0.78rem;
+	font-weight: 600;
+	word-break: break-all;
+}
+
+.inspector-io-desc {
+	font-size: 0.72rem;
+	color: #7a6f63;
+	line-height: 1.5;
+}
+
+.inspector-io-children {
+	margin: 4px 0 8px 4px;
+	padding-left: 12px;
+	border-left: 1px solid #e8d9c3;
+}
+
 /* 节点选中态与工具栏（浮动在节点上方） */
 .node-shell {
 	position: relative;
