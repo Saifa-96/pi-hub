@@ -7,11 +7,11 @@ import { useDim } from "./flow-contexts.js";
 export const EDGE_DEFAULTS = {
 	type: "routed",
 	interactionWidth: 16,
-	style: { stroke: "#9a8f82", strokeWidth: 1.6 },
-	labelStyle: { fill: "#2a2622", fontSize: 11, fontFamily: "inherit" },
+	style: { stroke: "#a1a1aa", strokeWidth: 1.5 },
+	labelStyle: { fill: "#3f3f46", fontSize: 11 },
 	labelShowBg: true,
-	labelBgStyle: { fill: "#fffdf9", fillOpacity: 0.92 },
-	labelBgPadding: [5, 2],
+	labelBgStyle: { fill: "#ffffff", fillOpacity: 0.9 },
+	labelBgPadding: [4, 2],
 	labelBgBorderRadius: 4,
 };
 

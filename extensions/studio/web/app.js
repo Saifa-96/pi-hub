@@ -238,7 +238,7 @@ function App() {
 				: state === "error"
 					? "图加载失败：服务器可能已停止（/studio 重新启动）。"
 					: "加载中…";
-		return html`<div class="graph-placeholder">${hint}</div>`;
+		return html`<div class="h-full flex items-center justify-center text-sm text-zinc-500">${hint}</div>`;
 	}
 
 	const focusNode = focusId === null ? null : view.nodes.find((n) => n.id === focusId);
@@ -246,8 +246,8 @@ function App() {
 	return html`
 		<${HighlightContext.Provider} value=${highlight}>
 		<${NodeActionsContext.Provider} value=${{ pendingDeepen, requestDeepen, requestHide }}>
-		<div class="app-layout">
-			<div class="app-canvas">
+		<div class="flex h-full w-full">
+			<div class="relative flex-1 min-w-0 h-full">
 		<${ReactFlow}
 			key=${"layout-" + epoch}
 			defaultNodes=${view.nodes}
@@ -264,21 +264,21 @@ function App() {
 		>
 			<${SelectionWatcher} onSelect=${onSelect} />
 			${hiddenCount > 0 ? html`<${Panel} position="top-right">
-				<div class=${"hidden-chip" + (saveFailed ? " save-failed" : "")} title=${saveFailed ? "隐藏状态保存失败：请重启 pi 会话后重试" : undefined} onClick=${() => setHiddenListOpen((open) => !open)}>
+				<div class=${"relative border border-zinc-300 bg-white/90 text-zinc-600 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:bg-white shadow-sm" + (saveFailed ? " !border-rose-500 !text-rose-600" : "")} title=${saveFailed ? "隐藏状态保存失败：请重启 pi 会话后重试" : undefined} onClick=${() => setHiddenListOpen((open) => !open)}>
 					已隐藏节点（${hiddenCount}）${saveFailed ? " · 未保存" : ""}
 				</div>
-				${hiddenListOpen ? html`<div class="hidden-popup">
-					${hiddenEntries.map((entry) => html`<div class="hidden-popup-row" key=${entry.id}>
-						<span class="hidden-popup-label" title=${entry.label}>${entry.label}</span>
-						<span class="hidden-popup-restore" onClick=${() => restoreHidden(entry.id)}>恢复</span>
+				${hiddenListOpen ? html`<div class="absolute right-0 top-full mt-1.5 w-56 max-h-80 overflow-y-auto bg-white border border-zinc-200 rounded-lg shadow-lg p-1.5 z-30">
+					${hiddenEntries.map((entry) => html`<div class="flex items-center justify-between gap-2.5 px-2 py-1 rounded-md hover:bg-zinc-100" key=${entry.id}>
+						<span class="text-sm text-zinc-800 truncate" title=${entry.label}>${entry.label}</span>
+						<span class="text-xs text-blue-600 cursor-pointer shrink-0" onClick=${() => restoreHidden(entry.id)}>恢复</span>
 					</div>`)}
-					<div class="hidden-popup-row hidden-popup-all">
-						<span class="hidden-popup-restore" onClick=${restoreAllHidden}>全部恢复</span>
+					<div class="flex items-center justify-end gap-2.5 px-2 py-1 border-t border-zinc-200 mt-1 pt-1.5">
+						<span class="text-xs text-blue-600 cursor-pointer shrink-0" onClick=${restoreAllHidden}>全部恢复</span>
 					</div>
 				</div>` : null}
 			<//>` : null}
 			<${Controls} showInteractive=${false} />
-			<${Background} variant=${BackgroundVariant.Dots} gap=${12} size=${1} />
+			<${Background} variant=${BackgroundVariant.Dots} gap=${16} size=${1} color="#d4d4d8" />
 		<//>
 			</div>
 			${focusNode === null ? null : html`<${InspectorPanel} node=${focusNode} meta=${focusMeta} />`}

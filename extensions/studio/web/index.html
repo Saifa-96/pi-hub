@@ -1,13 +1,21 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="h-full">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="icon" href="data:," />
 	<title>Studio</title>
-	<!-- React Flow 的基础样式来自 CDN；配色与排版由 studio.css 覆盖 -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xyflow/react@12.11.6/dist/style.css" />
 	<link rel="stylesheet" href="/studio.css" />
+	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+	<style type="text/tailwindcss">
+		@theme {
+			--color-kind-frontend: #059669;
+			--color-kind-backend: #2563eb;
+			--color-kind-database: #d97706;
+			--color-kind-external: #7c3aed;
+		}
+	</style>
 	<script type="importmap">
 	{
 		"imports": {
@@ -21,12 +29,12 @@
 	}
 	</script>
 </head>
-<body>
-	<header id="topbar">
-		<div class="kicker">pi studio</div>
-		<span id="page-title">设计结构图</span>
+<body class="h-full flex flex-col bg-white text-zinc-900 antialiased">
+	<header class="flex items-baseline gap-3 px-4 py-2.5 border-b border-zinc-200 bg-white">
+		<div class="text-[11px] uppercase tracking-[0.15em] text-zinc-400 font-semibold">pi studio</div>
+		<span class="text-sm font-semibold">设计结构图</span>
 	</header>
-	<main id="canvas-wrap"><div id="root"></div></main>
+	<main class="flex-1 min-h-0"><div id="root" class="h-full"></div></main>
 	<script type="module" src="/app.js"></script>
 </body>
 </html>
