@@ -170,8 +170,10 @@ body {
 .node-toolbar {
 	position: absolute;
 	bottom: calc(100% + 8px);
-	left: 50%;
-	transform: translateX(-50%);
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	width: fit-content;
 	display: flex;
 	gap: 4px;
 	padding: 3px;
@@ -200,6 +202,77 @@ body {
 .toolbar-btn.pending {
 	opacity: 0.6;
 	cursor: default;
+}
+
+/* 已隐藏节点：右上角 ghost 芯片 + 恢复弹层 */
+.hidden-chip {
+	position: relative;
+	border: 1px solid #d8cfc0;
+	background: rgba(255, 253, 249, 0.85);
+	color: #7a6f63;
+	font-size: 11px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	cursor: pointer;
+}
+
+.hidden-chip:hover {
+	background: #fffdf9;
+}
+
+.hidden-chip.save-failed {
+	border-color: #b3552e;
+	color: #b3552e;
+}
+
+.hidden-popup {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	min-width: 220px;
+	max-height: 320px;
+	overflow-y: auto;
+	background: #fffdf9;
+	border: 1px solid #e8e1d5;
+	border-radius: 8px;
+	box-shadow: 0 4px 14px rgba(42, 38, 34, 0.18);
+	padding: 6px;
+	z-index: 30;
+}
+
+.hidden-popup-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 4px 8px;
+	border-radius: 6px;
+}
+
+.hidden-popup-row:hover {
+	background: #f4efe7;
+}
+
+.hidden-popup-label {
+	font-size: 0.78rem;
+	color: #2a2622;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.hidden-popup-restore {
+	flex-shrink: 0;
+	font-size: 0.72rem;
+	color: #3a6ea5;
+	cursor: pointer;
+}
+
+.hidden-popup-all {
+	border-top: 1px solid #e8e1d5;
+	margin-top: 4px;
+	padding-top: 6px;
+	justify-content: flex-end;
 }
 
 .react-flow__attribution {

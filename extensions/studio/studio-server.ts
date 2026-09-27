@@ -5,7 +5,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -148,6 +148,39 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 			}
 			lastDeepenAt = Date.now();
 			deps.onDeepen(nodeId);
+			sendJson(res, 200, { ok: true });
+			return;
+		}
+
+		if (url.pathname === "/api/state" && (req.method === "GET" || req.method === "PUT")) {
+			const stateFile = join(deps.dataDir, "ui-state.json");
+			if (req.method === "GET") {
+				let state = { hidden: [] };
+				if (existsSync(stateFile)) {
+					try {
+						const parsed = JSON.parse(readFileSync(stateFile, "utf8"));
+						if (Array.isArray(parsed.hidden)) state = { hidden: parsed.hidden.filter((id) => typeof id === "string") };
+					} catch {
+						// 坏文件视为空状态，不阻断页面
+					}
+				}
+				sendJson(res, 200, state);
+				return;
+			}
+			let body: unknown;
+			try {
+				body = await readJsonBody(req);
+			} catch {
+				sendJson(res, 400, { error: "bad body" });
+				return;
+			}
+			const hidden = (body as { hidden?: unknown } | null)?.hidden;
+			if (!Array.isArray(hidden) || hidden.some((id) => typeof id !== "string")) {
+				sendJson(res, 400, { error: "hidden must be a string array" });
+				return;
+			}
+			if (!existsSync(deps.dataDir)) mkdirSync(deps.dataDir, { recursive: true });
+			writeFileSync(stateFile, JSON.stringify({ hidden: [...new Set(hidden)] }, null, "\t") + "\n");
 			sendJson(res, 200, { ok: true });
 			return;
 		}
