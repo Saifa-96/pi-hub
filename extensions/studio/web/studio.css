@@ -104,6 +104,21 @@ body {
 	font-size: 0.72rem;
 	padding: 2px 0;
 	word-break: break-all;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	border-radius: 4px;
+}
+
+.inspector-evidence:hover {
+	background: #f4efe7;
+}
+
+.inspector-copied {
+	flex-shrink: 0;
+	color: #3f7f5f;
+	font-size: 0.68rem;
 }
 
 .inspector-meta-row {
