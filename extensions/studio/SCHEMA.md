@@ -62,12 +62,15 @@
 ## 边
 
 ```jsonc
-{ "from": "grammar", "to": "tts", "label": "fetch /api/tts", "bidirectional": true }
+{ "from": "tts", "to": "grammar", "label": "语音合成", "bidirectional": true }
 ```
 
+- **方向 = 提供方 → 消费方**：from 向 to 提供能力/数据，读作「from 向 to 提供〈label〉」。
+  箭头模式即角色：全是出箭头 = 基础模块；全是入箭头 = 业务/组合节点
 - from/to 必须是已存在的节点 id（含任何节点的 children 里的 id）
-- label：2–6 字短语，说明这条线「传的是什么」（如动宾短语「提交答案」、名词短语「用户会话」；具体用词由项目决定），非必填但强烈建议
-- bidirectional：可选。请求-响应、读写类双向关系标 true（画双箭头）；纯推送/单向调用不标
+- label：2–6 字短语，写**提供的能力/数据**（如「排期计算」「词条存储」「SSE 台词流」），
+  不写消费方的动作（如「提交」「调用」），非必填但强烈建议
+- bidirectional：可选。双向能力（请求-响应、读写类）标 true（画双箭头）；纯单向提供不标
 
 ## 修改纪律（agent 必须遵守）
 
