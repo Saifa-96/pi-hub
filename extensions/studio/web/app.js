@@ -42,6 +42,55 @@ function App() {
 	const graphRef = useRef(graph);
 	graphRef.current = graph;
 
+	// 隐藏状态：存 ui-state.json（服务端持久化，跨会话有效）；渲染期赋值供回调取最新集合
+	const hiddenRef = useRef(hiddenIds);
+	hiddenRef.current = hiddenIds;
+
+	const persistHidden = useCallback((next) => {
+		api("/api/state", {
+			method: "PUT",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ hidden: [...next] }),
+		})
+			.then(() => setSaveFailed(false))
+			.catch((error) => {
+				// 保存失败必须可见（通常是会话未重启、server 缺少 /api/state）
+				setSaveFailed(true);
+				console.error("隐藏状态保存失败，重启 pi 会话后重试", error);
+			});
+	}, []);
+
+	// 修剪式对账：state 中已不存在于图里的 id 直接删除（agent 重新分析会舍弃节点）
+	const reconcileHidden = useCallback((graphData) => {
+		const next = pruneHiddenState(graphData, hiddenRef.current);
+		if (next === null) return;
+		hiddenRef.current = next;
+		setHiddenIds(next);
+		persistHidden(next);
+	}, []);
+
+	const applyHidden = useCallback((next) => {
+		hiddenRef.current = next;
+		setHiddenIds(next);
+		setFocus({ id: null, epoch: epochRef.current });
+		setHiddenListOpen(false);
+		persistHidden(next);
+	}, [persistHidden]);
+
+	const requestHide = useCallback((nodeId) => {
+		const next = new Set(hiddenRef.current);
+		next.add(nodeId);
+		applyHidden(next);
+	}, [applyHidden]);
+
+	const restoreHidden = useCallback((nodeId) => {
+		const next = new Set(hiddenRef.current);
+		next.delete(nodeId);
+		applyHidden(next);
+	}, [applyHidden]);
+
+	const restoreAllHidden = useCallback(() => applyHidden(new Set()), [applyHidden]);
+
 	useEffect(() => {
 		api("/api/graph")
 			.then((payload) => {
@@ -59,7 +108,13 @@ function App() {
 	useEffect(() => {
 		if (state !== "ready") return;
 		api("/api/state")
-			.then((s) => { if (Array.isArray(s.hidden)) setHiddenIds(new Set(s.hidden)); })
+			.then((s) => {
+				if (!Array.isArray(s.hidden)) return;
+				const loaded = new Set(s.hidden);
+				const pruned = pruneHiddenState(graphRef.current, loaded);
+				setHiddenIds(pruned ?? loaded);
+				if (pruned !== null) persistHidden(pruned); // 对账结果回写，孤儿记录不残留
+			})
 			.catch(() => {});
 		let last = JSON.stringify(graphRef.current);
 		const timer = setInterval(() => {
@@ -76,45 +131,9 @@ function App() {
 				.catch(() => {});
 		}, 2000);
 		return () => clearInterval(timer);
-	}, [state]);
+	}, [state, reconcileHidden]);
 
 	const onSelect = useCallback((id) => setFocus({ id, epoch: epochRef.current }), []);
-
-	// 隐藏状态：存 ui-state.json（服务端持久化，跨会话有效）；渲染期赋值供回调取最新集合
-	const hiddenRef = useRef(hiddenIds);
-	hiddenRef.current = hiddenIds;
-
-	const applyHidden = useCallback((next) => {
-		hiddenRef.current = next;
-		setHiddenIds(next);
-		setFocus({ id: null, epoch: epochRef.current });
-		setHiddenListOpen(false);
-		api("/api/state", {
-			method: "PUT",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ hidden: [...next] }),
-		})
-			.then(() => setSaveFailed(false))
-			.catch((error) => {
-				// 保存失败必须可见（通常是会话未重启、server 缺少 /api/state）
-				setSaveFailed(true);
-				console.error("隐藏状态保存失败，重启 pi 会话后重试", error);
-			});
-	}, []);
-
-	const requestHide = useCallback((nodeId) => {
-		const next = new Set(hiddenRef.current);
-		next.add(nodeId);
-		applyHidden(next);
-	}, [applyHidden]);
-
-	const restoreHidden = useCallback((nodeId) => {
-		const next = new Set(hiddenRef.current);
-		next.delete(nodeId);
-		applyHidden(next);
-	}, [applyHidden]);
-
-	const restoreAllHidden = useCallback(() => applyHidden(new Set()), [applyHidden]);
 
 	// 过滤隐藏节点（含其子树）及其相连边；集合变化 → 重布局 → key 重挂载
 	const filteredGraph = useMemo(() => {
@@ -289,3 +308,20 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(html`<${App} />`);
+
+/**
+ * 修剪式对账：state 中已不存在于图里的 id 直接删除。无变化返回 null。
+ */
+function pruneHiddenState(graphData, currentHidden) {
+	if (!graphData || !Array.isArray(graphData.nodes)) return null;
+	const graphIds = new Set();
+	(function reg(nodes) {
+		const list = nodes ?? [];
+		for (const node of list) {
+			graphIds.add(node.id);
+			reg(node.children);
+		}
+	})(graphData.nodes);
+	const next = new Set([...currentHidden].filter((id) => graphIds.has(id)));
+	return next.size === currentHidden.size ? null : next;
+}
