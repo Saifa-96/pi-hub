@@ -5,7 +5,11 @@
 import { createContext, useCallback, useContext } from "react";
 import { useOnSelectionChange } from "@xyflow/react";
 
-export const DeepenContext = createContext({ pendingDeepen: new Set(), requestDeepen: () => {} });
+export const NodeActionsContext = createContext({
+	pendingDeepen: new Set(),
+	requestDeepen: () => {},
+	requestHide: () => {},
+});
 
 export const HighlightContext = createContext({ active: false, nodeIds: null, edgeIds: null });
 
