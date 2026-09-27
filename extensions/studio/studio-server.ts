@@ -1,11 +1,13 @@
 /**
  * In-process studio server: serves the static workbench page on a random free
- * 127.0.0.1 port, plus one token-gated API (GET /api/graph) that reads the
- * project's graph.json. Lives exactly as long as the pi process.
+ * 127.0.0.1 port, plus token-gated APIs: GET /api/graph reads the project's
+ * graph.json, POST /api/deepen forwards page-initiated deepen requests to the
+ * host session, GET /api/events streams graph-change notifications (SSE).
+ * Lives exactly as long as the pi process.
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync, watch, type FSWatcher } from "node:fs";
 import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -14,7 +16,9 @@ export interface StudioServerDeps {
 	webDir: string;
 	dataDir: string;
 	projectRoot: string;
-	/** 页面发起「深入」分析时回调（节点 id）。不传则 POST /api/deepen 返回 501。 */
+	/**
+	 * 页面发起「深入」分析时回调（节点 id）。不传则 POST /api/deepen 返回 501。
+	 */
 	onDeepen?: (nodeId: string) => void;
 }
 
@@ -32,69 +36,40 @@ const STATIC_ROUTES: Record<string, { filePath: string; contentType: string }> =
 	"/flow-nodes.js": { filePath: "flow-nodes.js", contentType: "text/javascript; charset=utf-8" },
 	"/flow-edges.js": { filePath: "flow-edges.js", contentType: "text/javascript; charset=utf-8" },
 	"/flow-contexts.js": { filePath: "flow-contexts.js", contentType: "text/javascript; charset=utf-8" },
-	"/html.js": { filePath: "html.js", contentType: "text/javascript; charset=utf-8" },
 	"/kind-styles.js": { filePath: "kind-styles.js", contentType: "text/javascript; charset=utf-8" },
 	"/inspector.js": { filePath: "inspector.js", contentType: "text/javascript; charset=utf-8" },
+	"/html.js": { filePath: "html.js", contentType: "text/javascript; charset=utf-8" },
 	"/studio.css": { filePath: "studio.css", contentType: "text/css; charset=utf-8" },
 };
-
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-	const payload = JSON.stringify(body);
-	res.writeHead(status, {
-		"content-type": "application/json; charset=utf-8",
-		"content-length": Buffer.byteLength(payload),
-		"cache-control": "no-store",
-	});
-	res.end(payload);
-}
-
-function sendStaticFile(res: ServerResponse, webDir: string, route: { filePath: string; contentType: string }): void {
-	const stream = createReadStream(join(webDir, route.filePath));
-	res.writeHead(200, { "content-type": route.contentType, "cache-control": "no-store" });
-	stream.on("error", () => {
-		res.statusCode = 404;
-		res.end("not found");
-	});
-	stream.pipe(res);
-}
-
-function tokenMatches(provided: string | null, expected: string): boolean {
-	if (provided === null || provided === "") return false;
-	const a = Buffer.from(provided);
-	const b = Buffer.from(expected);
-	return a.length === b.length && createHash("sha256").update(a).digest().equals(createHash("sha256").update(b).digest());
-}
 
 /**
  * Start the studio server on a random free localhost port.
  */
-function readJsonBody(req: IncomingMessage): Promise<unknown> {
-	return new Promise((resolve, reject) => {
-		let size = 0;
-		const chunks: Buffer[] = [];
-		req.on("data", (chunk: Buffer) => {
-			size += chunk.length;
-			if (size > 65536) {
-				reject(new Error("body too large"));
-				req.destroy();
-				return;
-			}
-			chunks.push(chunk);
-		});
-		req.on("end", () => {
-			try {
-				resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-			} catch (error) {
-				reject(error);
-			}
-		});
-		req.on("error", reject);
-	});
-}
-
 export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerHandle> {
 	const token = randomBytes(16).toString("hex");
 	let lastDeepenAt = 0;
+	const sseClients = new Set<ServerResponse>();
+	let graphFileWatcher: FSWatcher | null = null;
+	let changeDebounce: ReturnType<typeof setTimeout> | null = null;
+
+	function broadcastGraphChanged(): void {
+		for (const res of sseClients) res.write("event: changed\ndata: graph\n\n");
+	}
+
+	function watchGraphFile(): void {
+		const graphFile = join(deps.dataDir, "graph.json");
+		try {
+			graphFileWatcher = watch(graphFile, () => {
+				if (changeDebounce !== null) clearTimeout(changeDebounce);
+				// 写入常伴随多个事件，防抖合并为一次通知
+				changeDebounce = setTimeout(broadcastGraphChanged, 200);
+			});
+		} catch {
+			// graph.json 尚不存在等场景：跳过监听，analyze 前会创建目录
+		}
+	}
+
+	if (existsSync(deps.dataDir)) watchGraphFile();
 	const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
 		const url = new URL(req.url ?? "/", "http://127.0.0.1");
 		const route = STATIC_ROUTES[url.pathname];
@@ -125,31 +100,15 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 			return;
 		}
 
-		if (url.pathname === "/api/deepen" && req.method === "POST") {
-			if (typeof deps.onDeepen !== "function") {
-				sendJson(res, 501, { error: "deepen unavailable" });
-				return;
-			}
-			// ponytail: 3s 冷却防双击；要更细的并发控制再做任务队列
-			if (Date.now() - lastDeepenAt < 3000) {
-				sendJson(res, 429, { error: "cooldown" });
-				return;
-			}
-			let body: unknown;
-			try {
-				body = await readJsonBody(req);
-			} catch {
-				sendJson(res, 400, { error: "bad body" });
-				return;
-			}
-			const nodeId = (body as { nodeId?: unknown } | null)?.nodeId;
-			if (typeof nodeId !== "string" || nodeId === "") {
-				sendJson(res, 400, { error: "nodeId required" });
-				return;
-			}
-			lastDeepenAt = Date.now();
-			deps.onDeepen(nodeId);
-			sendJson(res, 200, { ok: true });
+		if (url.pathname === "/api/events" && req.method === "GET") {
+			res.writeHead(200, {
+				"content-type": "text/event-stream",
+				"cache-control": "no-store",
+				connection: "keep-alive",
+			});
+			res.write(": connected\n\n");
+			sseClients.add(res);
+			req.on("close", () => sseClients.delete(res));
 			return;
 		}
 
@@ -186,8 +145,40 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 			return;
 		}
 
+		if (url.pathname === "/api/deepen" && req.method === "POST") {
+			if (typeof deps.onDeepen !== "function") {
+				sendJson(res, 501, { error: "deepen unavailable" });
+				return;
+			}
+			// ponytail: 3s 冷却防双击；要更细的并发控制再做任务队列
+			if (Date.now() - lastDeepenAt < 3000) {
+				sendJson(res, 429, { error: "cooldown" });
+				return;
+			}
+			let body: unknown;
+			try {
+				body = await readJsonBody(req);
+			} catch {
+				sendJson(res, 400, { error: "bad body" });
+				return;
+			}
+			const nodeId = (body as { nodeId?: unknown } | null)?.nodeId;
+			if (typeof nodeId !== "string" || nodeId === "") {
+				sendJson(res, 400, { error: "nodeId required" });
+				return;
+			}
+			lastDeepenAt = Date.now();
+			deps.onDeepen(nodeId);
+			sendJson(res, 200, { ok: true });
+			return;
+		}
+
 		sendJson(res, 404, { error: "not found" });
 	});
+
+	// graph.json 被（重）建时（analyze 首次产出）接上监听
+	if (graphFileWatcher === null && existsSync(deps.dataDir) === false) mkdirSync(deps.dataDir, { recursive: true });
+	watchGraphFile();
 
 	return new Promise((resolveListen, rejectListen) => {
 		server.once("error", rejectListen);
@@ -201,7 +192,12 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 			resolveListen({
 				url: `http://127.0.0.1:${address.port}/?token=${token}`,
 				port: address.port,
-				close: () => server.close(),
+				close: () => {
+					graphFileWatcher?.close();
+					if (changeDebounce !== null) clearTimeout(changeDebounce);
+					for (const res of sseClients) res.end();
+					server.close();
+				},
 			});
 		});
 	});
@@ -220,4 +216,58 @@ export function openInBrowser(url: string): void {
 		return;
 	}
 	spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
+}
+
+function sendJson(res: ServerResponse, status: number, body: unknown): void {
+	const payload = JSON.stringify(body);
+	res.writeHead(status, {
+		"content-type": "application/json; charset=utf-8",
+		"content-length": Buffer.byteLength(payload),
+		"cache-control": "no-store",
+	});
+	res.end(payload);
+}
+
+function sendStaticFile(res: ServerResponse, webDir: string, route: { filePath: string; contentType: string }): void {
+	const stream = createReadStream(join(webDir, route.filePath));
+	res.writeHead(200, { "content-type": route.contentType, "cache-control": "no-store" });
+	stream.on("error", () => {
+		res.statusCode = 404;
+		res.end("not found");
+	});
+	stream.pipe(res);
+}
+
+function tokenMatches(provided: string | null, expected: string): boolean {
+	if (provided === null || provided === "") return false;
+	const a = Buffer.from(provided);
+	const b = Buffer.from(expected);
+	return a.length === b.length && createHash("sha256").update(a).digest().equals(createHash("sha256").update(b).digest());
+}
+
+/**
+ * Read and JSON-parse the request body, rejecting oversized (>64KB) payloads.
+ */
+function readJsonBody(req: IncomingMessage): Promise<unknown> {
+	return new Promise((resolve, reject) => {
+		let size = 0;
+		const chunks: Buffer[] = [];
+		req.on("data", (chunk: Buffer) => {
+			size += chunk.length;
+			if (size > 65536) {
+				reject(new Error("body too large"));
+				req.destroy();
+				return;
+			}
+			chunks.push(chunk);
+		});
+		req.on("end", () => {
+			try {
+				resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+			} catch (error) {
+				reject(error);
+			}
+		});
+		req.on("error", reject);
+	});
 }

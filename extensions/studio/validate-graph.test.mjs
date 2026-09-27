@@ -171,9 +171,7 @@ test("io：结构化输入/输出合法，坏形态报诊断", () => {
 
 		const emptyIo = validGraph();
 		emptyIo.nodes[0].io = {};
-		const r3 = runCli(emptyIo, repo);
-		assert.equal(r3.status, 1);
-		assert.ok(JSON.parse(r3.stdout).some((item) => item.path === "$.nodes[0].io"));
+		assert.equal(runCli(emptyIo, repo).status, 0, "io:{}（检查过，无值得列的项）合法");
 
 		const nested = validGraph();
 		nested.nodes[0].io = {
