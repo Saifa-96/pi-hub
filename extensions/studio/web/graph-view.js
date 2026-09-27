@@ -39,7 +39,7 @@ export function toElkGraph(graph) {
 			id: `e${index}`,
 			sources: [edge.from],
 			targets: [edge.to],
-			labels: edge.label ? [{ text: edge.label, width: Math.min(220, edge.label.length * 12 + 12), height: 18 }] : [],
+			labels: edge.label ? [{ text: edge.label, width: estimateLabelWidth(edge.label), height: 18 }] : [],
 		})),
 	};
 }
@@ -108,7 +108,7 @@ export function deriveView(graph, layoutResult) {
 		const points = sectionPoints(routed);
 		const frame = lcaFrame(routed.sources?.[0], routed.targets?.[0]);
 		// ELK 的 label x/y 是标签盒左上角；xy-flow 的 labelX/Y 期望中心——补回半宽半高
-		const labelWidth = label?.width ?? Math.min(220, (original.label?.length ?? 0) * 12 + 12);
+		const labelWidth = label?.width ?? estimateLabelWidth(original.label ?? "");
 		const labelHeight = label?.height ?? 18;
 		return {
 			id: routed.id,
@@ -168,4 +168,11 @@ function sectionPoints(edge) {
 	const section = edge.sections?.[0];
 	if (!section) return null;
 	return [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
+}
+
+/**
+ * ELK 布局用的标签宽度估算：每个字符 12px、加基础边距、上限 220px。
+ */
+function estimateLabelWidth(label) {
+	return Math.min(220, label.length * 12 + 12);
 }

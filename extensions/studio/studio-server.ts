@@ -56,20 +56,26 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 		for (const res of sseClients) res.write("event: changed\ndata: graph\n\n");
 	}
 
+	/**
+	 * 监听数据目录（而非单个文件）：graph.json 的写入、新建、改名都能捕获。
+	 */
 	function watchGraphFile(): void {
-		const graphFile = join(deps.dataDir, "graph.json");
 		try {
-			graphFileWatcher = watch(graphFile, () => {
+			graphFileWatcher = watch(deps.dataDir, (_event, filename) => {
+				// 目录级监听不区分事件类型，只关心目标文件
+				if (filename !== null && filename !== "graph.json") return;
 				if (changeDebounce !== null) clearTimeout(changeDebounce);
 				// 写入常伴随多个事件，防抖合并为一次通知
 				changeDebounce = setTimeout(broadcastGraphChanged, 200);
 			});
-		} catch {
-			// graph.json 尚不存在等场景：跳过监听，analyze 前会创建目录
+		} catch (error) {
+			// 目录不可监听（权限等）：无推送，页面退化为手动刷新
+			console.error("studio: graph 监听失败，SSE 推送不可用", error);
 		}
 	}
 
-	if (existsSync(deps.dataDir)) watchGraphFile();
+	if (!existsSync(deps.dataDir)) mkdirSync(deps.dataDir, { recursive: true });
+	watchGraphFile();
 	const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
 		const url = new URL(req.url ?? "/", "http://127.0.0.1");
 		const route = STATIC_ROUTES[url.pathname];
@@ -93,9 +99,11 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 				return;
 			}
 			try {
-				sendJson(res, 200, { graph: JSON.parse(readFileSync(file, "utf8")) });
-			} catch {
-				sendJson(res, 200, { graph: null });
+			sendJson(res, 200, { graph: JSON.parse(readFileSync(file, "utf8")) });
+			} catch (error) {
+				// 解析失败不是「无图」：明确告知页面，别让用户误以为该重新分析
+				console.error("studio: graph.json 解析失败", error);
+				sendJson(res, 200, { graph: null, parseError: true });
 			}
 			return;
 		}
@@ -134,7 +142,7 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 				sendJson(res, 400, { error: "bad body" });
 				return;
 			}
-			const hidden = (body as { hidden?: unknown } | null)?.hidden;
+			const hidden = typeof body === "object" && body !== null && "hidden" in body ? body.hidden : undefined;
 			if (!Array.isArray(hidden) || hidden.some((id) => typeof id !== "string")) {
 				sendJson(res, 400, { error: "hidden must be a string array" });
 				return;
@@ -150,7 +158,7 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 				sendJson(res, 501, { error: "deepen unavailable" });
 				return;
 			}
-			// ponytail: 3s 冷却防双击；要更细的并发控制再做任务队列
+			// 3s 冷却防双击重复派发；需要更细并发控制时再引入任务队列
 			if (Date.now() - lastDeepenAt < 3000) {
 				sendJson(res, 429, { error: "cooldown" });
 				return;
@@ -162,7 +170,7 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 				sendJson(res, 400, { error: "bad body" });
 				return;
 			}
-			const nodeId = (body as { nodeId?: unknown } | null)?.nodeId;
+			const nodeId = typeof body === "object" && body !== null && "nodeId" in body ? body.nodeId : undefined;
 			if (typeof nodeId !== "string" || nodeId === "") {
 				sendJson(res, 400, { error: "nodeId required" });
 				return;
@@ -175,10 +183,6 @@ export function startStudioServer(deps: StudioServerDeps): Promise<StudioServerH
 
 		sendJson(res, 404, { error: "not found" });
 	});
-
-	// graph.json 被（重）建时（analyze 首次产出）接上监听
-	if (graphFileWatcher === null && existsSync(deps.dataDir) === false) mkdirSync(deps.dataDir, { recursive: true });
-	watchGraphFile();
 
 	return new Promise((resolveListen, rejectListen) => {
 		server.once("error", rejectListen);
