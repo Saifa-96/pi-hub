@@ -106,9 +106,6 @@ function validateIo(io, path) {
 		}
 		validateIoList(list, `${path}.io.${kind}`);
 	}
-	if (!Array.isArray(io.inputs) && !Array.isArray(io.outputs)) {
-		fail(`${path}.io`, `inputs / outputs 至少提供一个`);
-	}
 }
 
 function validateNode(node, path) {

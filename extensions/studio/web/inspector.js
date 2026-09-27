@@ -56,10 +56,12 @@ export function InspectorPanel({ node, meta }) {
 		${info.expandable ? html`<div class="inline-block text-[11px] tracking-wide px-2 py-0.5 border border-rose-500 text-rose-600 rounded-full mb-2">可深入</div>` : null}
 		<div class="font-semibold text-[15px] mb-1.5">${info.label}</div>
 		<div class="text-xs text-zinc-500 leading-relaxed">${info.summary ?? "（无说明）"}</div>
+		${io ? html`
 		<${SectionTitle}>输入<//>
-		${io?.inputs ? html`<${IoList} items=${io.inputs} />` : html`<div class="text-xs text-zinc-400">（深入后提取）</div>`}
+		${(io.inputs ?? []).length > 0 ? html`<${IoList} items=${io.inputs} />` : html`<div class="text-xs text-zinc-400">（无）</div>`}
 		<${SectionTitle}>输出<//>
-		${io?.outputs ? html`<${IoList} items=${io.outputs} />` : html`<div class="text-xs text-zinc-400">（深入后提取）</div>`}
+		${(io.outputs ?? []).length > 0 ? html`<${IoList} items=${io.outputs} />` : html`<div class="text-xs text-zinc-400">（无）</div>`}
+		` : null}
 		<${SectionTitle}>证据（点击复制路径）<//>
 		${evidence.length > 0
 			? evidence.map((path) => html`<div

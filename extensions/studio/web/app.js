@@ -1,8 +1,10 @@
 /* Studio 页面入口：加载 graph.json → ELK 布局 → xy-flow 渲染。
  * 非受控模式（defaultNodes + key 重挂载），选中原生生效；
- * 跨帧状态经 context 下发（见 flow-contexts.js）。 */
+ * 跨帧状态经 context 下发（见 flow-contexts.js）。
+ * 更新通道：server 对 graph.json 做 fs.watch，变更经 SSE 推送，
+ * 页面收到「changed」后重拉图——事件驱动，无轮询。 */
 
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
 	ReactFlow,
@@ -36,13 +38,11 @@ function App() {
 	const [hiddenIds, setHiddenIds] = useState(() => new Set());
 	const [hiddenListOpen, setHiddenListOpen] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
-	// 渲染期赋值（非 effect 镜像），供 onSelect 捕获当前轮次
+	// 渲染期赋值（非 effect 镜像），供异步回调捕获当前轮次/集合
 	const epochRef = useRef(epoch);
 	epochRef.current = epoch;
 	const graphRef = useRef(graph);
 	graphRef.current = graph;
-
-	// 隐藏状态：存 ui-state.json（服务端持久化，跨会话有效）；渲染期赋值供回调取最新集合
 	const hiddenRef = useRef(hiddenIds);
 	hiddenRef.current = hiddenIds;
 
@@ -69,6 +69,27 @@ function App() {
 		persistHidden(next);
 	}, []);
 
+	const requestDeepen = useCallback(async (nodeId) => {
+		setPendingDeepen((prev) => {
+			const next = new Set(prev);
+			next.add(nodeId);
+			return next;
+		});
+		try {
+			await api("/api/deepen", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ nodeId }),
+			});
+		} catch {
+			setPendingDeepen((prev) => {
+				const next = new Set(prev);
+				next.delete(nodeId);
+				return next;
+			});
+		}
+	}, []);
+
 	const applyHidden = useCallback((next) => {
 		hiddenRef.current = next;
 		setHiddenIds(next);
@@ -91,49 +112,58 @@ function App() {
 
 	const restoreAllHidden = useCallback(() => applyHidden(new Set()), [applyHidden]);
 
+	const onSelect = useCallback((id) => setFocus({ id, epoch: epochRef.current }), []);
+
+	// 挂载：先图后状态（顺序保证 state 的孤儿修剪基于最新图）
 	useEffect(() => {
-		api("/api/graph")
-			.then((payload) => {
-				if (payload.graph === null || payload.graph === undefined) {
+		let cancelled = false;
+		(async () => {
+			try {
+				const graphPayload = await api("/api/graph");
+				if (cancelled) return;
+				if (graphPayload.graph === null || graphPayload.graph === undefined) {
 					setState("empty");
 					return;
 				}
-				setGraph(payload.graph);
+				graphRef.current = graphPayload.graph;
+				setGraph(graphPayload.graph);
+				const statePayload = await api("/api/state").catch(() => ({}));
+				if (cancelled) return;
+				if (Array.isArray(statePayload.hidden)) {
+					const loaded = new Set(statePayload.hidden);
+					const pruned = pruneHiddenState(graphPayload.graph, loaded);
+					hiddenRef.current = pruned ?? loaded;
+					setHiddenIds(hiddenRef.current);
+					if (pruned !== null) persistHidden(hiddenRef.current);
+				}
 				setState("ready");
-			})
-			.catch(() => setState("error"));
+			} catch (error) {
+				console.error("DBG 初始加载失败:", error && error.message);
+				if (!cancelled) setState("error");
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
-	// 轮询：graph.json 变化（深入完成或重生成）→ 换图重排；启动时同步隐藏状态
+	// SSE：agent 改写 graph.json → server 推送 changed → 拉新图（EventSource 断线自动重连）
 	useEffect(() => {
 		if (state !== "ready") return;
-		api("/api/state")
-			.then((s) => {
-				if (!Array.isArray(s.hidden)) return;
-				const loaded = new Set(s.hidden);
-				const pruned = pruneHiddenState(graphRef.current, loaded);
-				setHiddenIds(pruned ?? loaded);
-				if (pruned !== null) persistHidden(pruned); // 对账结果回写，孤儿记录不残留
-			})
-			.catch(() => {});
-		let last = JSON.stringify(graphRef.current);
-		const timer = setInterval(() => {
+		const token = new URLSearchParams(location.search).get("token") ?? "";
+		const source = new EventSource("/api/events?token=" + encodeURIComponent(token));
+		source.addEventListener("changed", () => {
 			api("/api/graph")
 				.then((payload) => {
 					if (payload.graph === null) return;
-					const next = JSON.stringify(payload.graph);
-					if (next !== last) {
-						last = next;
-						setGraph(payload.graph);
-						setPendingDeepen(new Set());
-					}
+					reconcileHidden(payload.graph);
+					setGraph(payload.graph);
+					setPendingDeepen(new Set());
 				})
 				.catch(() => {});
-		}, 2000);
-		return () => clearInterval(timer);
+		});
+		return () => source.close();
 	}, [state, reconcileHidden]);
-
-	const onSelect = useCallback((id) => setFocus({ id, epoch: epochRef.current }), []);
 
 	// 过滤隐藏节点（含其子树）及其相连边；集合变化 → 重布局 → key 重挂载
 	const filteredGraph = useMemo(() => {
@@ -162,6 +192,15 @@ function App() {
 			edges: (graph.edges ?? []).filter((e) => !isHidden(e.from) && !isHidden(e.to)),
 		};
 	}, [graph, hiddenIds]);
+
+	// 布局：过滤后的图变化（首次加载 / 隐藏变化 / agent 重写）时重排
+	useEffect(() => {
+		if (state !== "ready" || filteredGraph === null) return;
+		elk.layout(toElkGraph(filteredGraph)).then((result) => {
+			setLayoutResult(result);
+			setEpoch((value) => value + 1);
+		});
+	}, [state, filteredGraph]);
 
 	// 右上角计数：当前图中被隐藏的节点总数（含子树）
 	const hiddenCount = useMemo(() => {
@@ -194,6 +233,7 @@ function App() {
 		return entries;
 	}, [hiddenIds, graph]);
 
+	// 布局：过滤后的图变化（首次加载 / 隐藏变化 / agent 重写）时重排
 	useEffect(() => {
 		if (state !== "ready" || filteredGraph === null) return;
 		elk.layout(toElkGraph(filteredGraph)).then((result) => {
@@ -202,34 +242,12 @@ function App() {
 		});
 	}, [state, filteredGraph]);
 
-	const requestDeepen = useCallback(async (nodeId) => {
-		setPendingDeepen((prev) => {
-			const next = new Set(prev);
-			next.add(nodeId);
-			return next;
-		});
-		try {
-			await api("/api/deepen", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ nodeId }),
-			});
-		} catch {
-			setPendingDeepen((prev) => {
-				const next = new Set(prev);
-				next.delete(nodeId);
-				return next;
-			});
-		}
-	}, []);
-
-	// 非受控：defaultNodes + key 重挂载（换图时新实例重新 fitView），选中原生生效
+	// 单选焦点 → 连通节点/边集合（含焦点自身）；多选/无选中 = 无突出
 	const view = useMemo(
 		() => (layoutResult === null ? { nodes: [], edges: [] } : deriveView(filteredGraph, layoutResult)),
 		[state, filteredGraph, layoutResult],
 	);
 
-	// 单选焦点 → 连通节点/边集合（含焦点自身）；多选/无选中 = 无突出
 	const focusId = focus.epoch === epoch ? focus.id : null;
 	const highlight = useMemo(() => {
 		if (focusId === null) return { active: false, nodeIds: null, edgeIds: null };
@@ -250,6 +268,8 @@ function App() {
 		[focusId, filteredGraph],
 	);
 
+	const focusNode = focusId === null ? null : view.nodes.find((n) => n.id === focusId);
+
 	if (state !== "ready") {
 		const hint =
 			state === "empty"
@@ -259,8 +279,6 @@ function App() {
 					: "加载中…";
 		return html`<div class="h-full flex items-center justify-center text-sm text-zinc-500">${hint}</div>`;
 	}
-
-	const focusNode = focusId === null ? null : view.nodes.find((n) => n.id === focusId);
 
 	return html`
 		<${HighlightContext.Provider} value=${highlight}>
@@ -283,8 +301,8 @@ function App() {
 		>
 			<${SelectionWatcher} onSelect=${onSelect} />
 			${hiddenCount > 0 ? html`<${Panel} position="top-right">
-				<div class=${"relative border border-zinc-300 bg-white/90 text-zinc-600 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:bg-white shadow-sm" + (saveFailed ? " !border-rose-500 !text-rose-600" : "")} title=${saveFailed ? "隐藏状态保存失败：请重启 pi 会话后重试" : undefined} onClick=${() => setHiddenListOpen((open) => !open)}>
-					已隐藏节点（${hiddenCount}）${saveFailed ? " · 未保存" : ""}
+				<div class="relative border border-zinc-300 bg-white/90 text-zinc-600 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:bg-white shadow-sm" onClick=${() => setHiddenListOpen((open) => !open)}>
+					已隐藏节点（${hiddenCount}）
 				</div>
 				${hiddenListOpen ? html`<div class="absolute right-0 top-full mt-1.5 w-56 max-h-80 overflow-y-auto bg-white border border-zinc-200 rounded-lg shadow-lg p-1.5 z-30">
 					${hiddenEntries.map((entry) => html`<div class="flex items-center justify-between gap-2.5 px-2 py-1 rounded-md hover:bg-zinc-100" key=${entry.id}>
@@ -292,7 +310,7 @@ function App() {
 						<span class="text-xs text-blue-600 cursor-pointer shrink-0" onClick=${() => restoreHidden(entry.id)}>恢复</span>
 					</div>`)}
 					<div class="flex items-center justify-end gap-2.5 px-2 py-1 border-t border-zinc-200 mt-1 pt-1.5">
-						<span class="text-xs text-blue-600 cursor-pointer shrink-0" onClick=${restoreAllHidden}>全部恢复</span>
+						<span class="text-xs text-blue-600 cursor-pointer" onClick=${restoreAllHidden}>全部恢复</span>
 					</div>
 				</div>` : null}
 			<//>` : null}
