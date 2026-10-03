@@ -10,7 +10,7 @@
 !pnpm-lock.yaml
 !settings.json
 !skills-lock.json
-!mcp-adapter.example.json
+!mcp.json.example
 !skills/
 !skills/**
 !.agents/

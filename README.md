@@ -39,11 +39,13 @@ echo $PI_CODING_AGENT_DIR   # PowerShell: [System.Environment]::GetEnvironmentVa
 
 Run `/login` in Pi to sign in to a provider (credentials are stored in `auth.json`), then pick a model with `/model`. Browse available models at https://pi.dev/models.
 
-`mcp-adapter.json` holds MCP server config (with API keys) and is git-ignored. Copy the example and fill in your keys:
+`mcp.json` holds MCP server config (with API keys) and is git-ignored. Pi's built-in MCP reads it directly (user-level file in the agent dir). Copy the example and fill in your keys:
 
 ```bash
-cp mcp-adapter.example.json mcp-adapter.json
+cp mcp.json.example mcp.json
 ```
+
+Manage servers with `pi mcp add` / `pi mcp list`, or `/mcp` inside a session.
 
 Browse available models and their config at https://pi.dev/models.
 
