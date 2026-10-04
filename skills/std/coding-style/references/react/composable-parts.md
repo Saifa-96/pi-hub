@@ -42,11 +42,11 @@ export const EditorToolbar = Object.assign(EditorToolbarRoot, {
 **Parts share state through one context owned by the root — never through props threaded via the consumer.** This is the defining property of the pattern: `<Tabs.Trigger>` knows the active tab because the root provides it, not because the consumer wires callbacks part-to-part.
 
 ```tsx
-interface TabsCtx { value: string; setValue: (v: string) => void; }
+interface TabsCtx { value: string | null; setValue: (v: string) => void; }
 const Ctx = createContext<TabsCtx | null>(null);
 
 function TabsRoot({ children }: TabsProps) {
-  const [value, setValue] = useState<string>();
+  const [value, setValue] = useState<string | null>(null);
   return <Ctx.Provider value={{ value, setValue }}>{children}</Ctx.Provider>;
 }
 // Trigger/Panel read Ctx (and re-render through it) — zero wiring at the call site
@@ -67,7 +67,7 @@ Applies to every leaf part of the family (and to simple standalone components).
 Type the props as an extension of the intrinsic element and forward everything you don't own:
 
 ```tsx
-type ZoomProps = ComponentProps<"div">;
+interface ZoomProps extends ComponentProps<"div"> {}
 
 export function Zoom({ className, style, ref, ...rest }: ZoomProps) {
   return (
@@ -162,9 +162,9 @@ When a wrapper element would break the DOM — a library trigger around the app'
 ```tsx
 import { Slot } from "@radix-ui/react-slot";
 
-function Button({ asChild, className, ...rest }: ButtonProps) {
+function Button({ asChild, className, ref, ...rest }: ButtonProps) {
   const Comp = asChild ? Slot.Root : "button";
-  return <Comp className={cn(buttonStyles, className)} {...rest} />;
+  return <Comp ref={ref} {...rest} className={cn(buttonStyles, className)} />;
 }
 ```
 
