@@ -1,6 +1,6 @@
 # React Conventions
 
-React-specific details for the [coding-style](../rules.md) rules. React code is also TypeScript, so the general conventions (type safety, early return, named exports, avoiding side effects) in [typescript.md](typescript.md) apply too; this file covers their React-specific shape plus React-only rules.
+React-specific details for the [coding-style](../../rules.md) rules. React code is also TypeScript, so the general conventions (type safety, early return, named exports, avoiding side effects) in [typescript.md](../typescript.md) apply too; this file covers their React-specific shape plus React-only rules. React's deeper references: [composable-parts.md](composable-parts.md) (component families) and [../tailwind.md](../tailwind.md) (class composition, where `className` meets Tailwind).
 
 ## Props
 
@@ -71,18 +71,11 @@ return (
 
 ## Tailwind
 
-- **Combine classnames with `cn()` only — never ternaries, template strings, or `+` concatenation inside `className`.** Conditional or computed classes go through `cn(...)` (clsx/tailwind-merge helper) so variants stay declarative and merge conflicts resolve correctly.
+Class composition and scale-vs-arbitrary-value rules live in [../tailwind.md](../tailwind.md) — `cn()` only (never ternaries or template strings in `className`), canonical scale utilities over exact-equivalent arbitrary values.
 
-```tsx
-// avoid — ternary in className
-<button className={active ? "bg-blue-500 text-white" : "bg-gray-200"} />
+## Composable part APIs
 
-// avoid — template string in className
-<div className={`${base} ${active ? "font-bold" : ""} p-2`} />
-
-// prefer — cn()
-<button className={cn("rounded px-3 py-1.5", active && "bg-blue-500 text-white", !active && "bg-gray-200")} />
-```
+Components that consumers must compose (libraries, editor shells, multi-part widgets) follow the Radix-style part model — parts + shared context, spread + ref on leaves, className merge, event chaining, `data-state`, controlled/uncontrolled, `asChild`/`Slot` delegation. That reference is separate and thorough: read [composable-parts.md](composable-parts.md) before building or reviewing such components.
 
 ## Files & directories
 
