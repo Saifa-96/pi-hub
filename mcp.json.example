@@ -13,6 +13,14 @@
       "headers": {
         "Authorization": "Bearer YOUR_ZREAD_API_KEY"
       }
+    },
+    "zai-vision": {
+      "command": "pnpm",
+      "args": ["dlx", "@z_ai/mcp-server@latest"],
+      "env": {
+        "Z_AI_API_KEY": "YOUR_ZAI_API_KEY",
+        "Z_AI_MODE": "ZHIPU"
+      }
     }
   }
 }
