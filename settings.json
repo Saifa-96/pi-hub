@@ -36,7 +36,6 @@
     "npm:pi-prompt-template-model",
     "npm:@dietrichgebert/ponytail",
     "npm:@gotgenes/pi-permission-system",
-    "extensions/daktilo",
     "npm:@andre-barbosa/pi-commit",
     "npm:pi-lsp-extension",
     "npm:pi-autoresearch"
