@@ -1,7 +1,7 @@
 {
   "defaultProvider": "zai-coding-cn",
   "defaultModel": "glm-5.3",
-  "lastChangelogVersion": "1.4.0",
+  "lastChangelogVersion": "1.5.2",
   "theme": "dark",
   "shellCommandPrefix": "export PATH=\"$(cygpath \"$PI_CODING_AGENT_DIR\" 2>/dev/null || echo \"$PI_CODING_AGENT_DIR\")/node_modules/.bin:$PATH\"",
   "enableSkillCommands": true,
@@ -41,6 +41,7 @@
     "npm:pi-autoresearch"
   ],
   "defaultThinkingLevel": "high",
+  "hideThinkingBlock": true,
   "fullscreenScrollbar": "auto",
   "tuiMode": "fullscreen",
   "compaction": {
@@ -52,5 +53,14 @@
   "defaultTools": [
     "+codemode"
   ],
-  "extensions": []
+  "extensions": [],
+  "extensionChangelogVersions": {
+    "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.48.0",
+    "{\"source\":\"npm:pi-powerline-footer\",\"scope\":\"user\"}": "0.22.0",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.88.1",
+    "{\"source\":\"npm:pi-prompt-template-model\",\"scope\":\"user\"}": "0.12.3",
+    "{\"source\":\"npm:@gotgenes/pi-permission-system\",\"scope\":\"user\"}": "42.0.0",
+    "{\"source\":\"npm:pi-lsp-extension\",\"scope\":\"user\"}": "1.4.0",
+    "{\"source\":\"npm:pi-autoresearch\",\"scope\":\"user\"}": "1.9.0"
+  }
 }
